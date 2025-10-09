@@ -10,12 +10,17 @@ fetch(SHEET_URL)
   .then((txt) => {
     // Google wraps JSON in a prefix, so strip it
     const json = JSON.parse(txt.substr(47).slice(0, -2));
-    data = json.table.rows.map((r) => ({
-      sku: r.c[0]?.v || "",
-      name: r.c[1]?.v || "",
-      barcode: r.c[2]?.v || "",
-      category: r.c[3]?.v || "",
-    }));
+    data = json.table.rows.map((r) => {
+  const barcodeCell = (r.c[2]?.v || "").trim();
+  const barcodeList = barcodeCell.split(",").map(b => b.trim()).filter(b => b);
+  return {
+    sku: r.c[0]?.v || "",
+    name: r.c[1]?.v || "",
+    barcodes: barcodeList, // store all barcodes
+    primaryBarcode: barcodeList[0] || "", // first one for display
+    category: r.c[3]?.v || "",
+  };
+});
     console.log('Loaded', data.length, 'rows');
   })
   .catch((err) => {
@@ -35,9 +40,10 @@ function onSearchInput(e) {
     document.getElementById("result").innerHTML = "";
     return;
   }
-  const results = data.filter(
-    (i) => (i.barcode && i.barcode.toString().endsWith(q)) || (i.sku && i.sku.toString().endsWith(q))
-  );
+  const results = data.filter(item =>
+  item.barcodes.some(b => b.endsWith(q)) ||
+  (item.sku && item.sku.toString().endsWith(q))
+);
 
   if (results.length === 0) {
     document.getElementById("result").innerHTML = "❌ No item found";
