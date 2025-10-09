@@ -54,7 +54,7 @@ function onSearchInput(e) {
       <strong>${escapeHtml(item.name)}</strong><br>
       SKU: ${escapeHtml(item.sku)}<br>
       Category: ${escapeHtml(item.category)}<br><br>
-      <img src="https://barcodeapi.org/api/auto/${encodeURIComponent(item.barcode)}" alt="Barcode" />
+      <img src="https://barcodeapi.org/api/auto/${encodeURIComponent(item.primaryBarcode)}" alt="Barcode" />
     `;
   }
 }
