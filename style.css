@@ -1,0 +1,68 @@
+:root {
+  --color-bg-light: #ffffff;
+  --color-text-light: #333333;
+  --color-accent: #FFD700; /* yellow */
+  --color-bg-dark: #121212;
+  --color-text-dark: #f0f0f0;
+}
+
+html[data-theme="light"] {
+  background: var(--color-bg-light);
+  color: var(--color-text-light);
+}
+html[data-theme="dark"] {
+  background: var(--color-bg-dark);
+  color: var(--color-text-dark);
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  padding: 20px;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+h1 {
+  margin: 0;
+  color: var(--color-accent);
+}
+
+button {
+  background: none;
+  border: none;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+main {
+  margin-top: 20px;
+}
+
+#searchBox {
+  width: 100%;
+  padding: 12px;
+  font-size: 18px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  box-sizing: border-box;
+}
+
+#result {
+  margin-top: 20px;
+  padding: 16px;
+  background: rgba(255,255,255,0.9);
+  border-radius: 8px;
+  min-height: 80px;
+}
+html[data-theme="dark"] #result {
+  background: rgba(0,0,0,0.6);
+}
+#result img {{
+  max-width: 100%;
+  height: auto;
+}}

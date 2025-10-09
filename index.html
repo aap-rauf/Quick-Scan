@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Easy Scan</title>
+
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#FFD700" />
+
+  <link rel="icon" href="icons/icon-192.png" sizes="192x192" />
+  <link rel="apple-touch-icon" href="icons/icon-512.png" />
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>Easy Scan</h1>
+    <div>
+      <button id="themeToggle" aria-label="Toggle theme">🌙</button>
+    </div>
+  </header>
+
+  <main>
+    <input
+      type="text"
+      id="searchBox"
+      placeholder="Enter last 6‑7 digits of barcode or SKU"
+      autocomplete="off"
+    />
+    <div id="result" role="region" aria-live="polite"></div>
+  </main>
+
+  <script src="script.js"></script>
+  <script>
+    // register service worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker
+        .register('service-worker.js')
+        .then(() => console.log('Service Worker registered'))
+        .catch(e => console.warn('SW register failed', e));
+    }
+  </script>
+</body>
+</html>
