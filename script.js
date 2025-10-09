@@ -35,27 +35,44 @@ document
   .addEventListener("input", onSearchInput);
 
 function onSearchInput(e) {
-  const q = e.target.value.trim();
+  const q = e.target.value.trim().toLowerCase();
   if (!q) {
     document.getElementById("result").innerHTML = "";
     return;
   }
-  const results = data.filter(item =>
-  item.barcodes.some(b => b.endsWith(q)) ||
-  (item.sku && item.sku.toString().endsWith(q))
-);
 
+  // 🔍 find matches by name, SKU, or any barcode
+  let results = data.filter(item =>
+    item.name.toLowerCase().includes(q) ||
+    (item.sku && item.sku.toString().toLowerCase().includes(q)) ||
+    item.barcodes.some(b => b.toLowerCase().includes(q))
+  );
+
+  // 🧹 remove duplicates (same barcode or SKU)
+  const seen = new Set();
+  results = results.filter(item => {
+    const key = item.primaryBarcode || item.sku;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  // 🟡 show all matches
   if (results.length === 0) {
     document.getElementById("result").innerHTML = "❌ No item found";
   } else {
-    // show first match
-    const item = results[0];
-    document.getElementById("result").innerHTML = `
-      <strong>${escapeHtml(item.name)}</strong><br>
-      SKU: ${escapeHtml(item.sku)}<br>
-      Category: ${escapeHtml(item.category)}<br><br>
-      <img src="https://barcodeapi.org/api/auto/${encodeURIComponent(item.primaryBarcode)}" alt="Barcode" />
-    `;
+    document.getElementById("result").innerHTML = results
+      .map(item => `
+        <div style="margin-bottom:20px; border-bottom:1px solid #ddd; padding-bottom:10px;">
+          <strong>${escapeHtml(item.name)}</strong><br>
+          SKU: ${escapeHtml(item.sku)}<br>
+          Category: ${escapeHtml(item.category)}<br><br>
+          ${item.primaryBarcode
+            ? `<img src="https://barcodeapi.org/api/auto/${encodeURIComponent(item.primaryBarcode)}" alt="Barcode" />`
+            : `<div style='color:red'>⚠️ No valid barcode</div>`}
+        </div>
+      `)
+      .join("");
   }
 }
 
