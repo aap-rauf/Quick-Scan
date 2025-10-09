@@ -13,7 +13,7 @@ fetch(SHEET_URL)
     data = json.table.rows.map((r) => ({
       sku: r.c[0]?.v || "",
       name: r.c[1]?.v || "",
-      barcode: (r.c[2]?.v || "").split(",")[0].trim(),
+      barcode: r.c[2]?.v || "",
       category: r.c[3]?.v || "",
     }));
     console.log('Loaded', data.length, 'rows');
