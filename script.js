@@ -4,10 +4,11 @@ const SHEET_URL =
 
 let data = [];
 
-// Load sheet data
+// load sheet data
 fetch(SHEET_URL)
   .then((res) => res.text())
   .then((txt) => {
+    // Google wraps JSON in a prefix, so strip it
     const json = JSON.parse(txt.substr(47).slice(0, -2));
     data = json.table.rows.map((r) => {
       const barcodeCell = (r.c[2]?.v || "").trim();
@@ -17,23 +18,13 @@ fetch(SHEET_URL)
         .filter((b) => b);
 
       return {
-        sku: (r.c[0]?.v || "").trim(),
-        name: (r.c[1]?.v || "").trim(),
-        barcodes: barcodeList,
-        primaryBarcode: barcodeList[0] || "",
+        sku: r.c[0]?.v || "",
+        name: r.c[1]?.v || "",
+        barcodes: barcodeList, // store all barcodes
+        primaryBarcode: barcodeList[0] || "", // first one for display
       };
     });
-
-    // 🧹 Remove duplicates (same SKU + name + primaryBarcode)
-    const seen = new Set();
-    data = data.filter((item) => {
-      const key = `${item.sku}|${item.name}|${item.primaryBarcode}`;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-
-    console.log("Loaded unique", data.length, "rows");
+    console.log("Loaded", data.length, "rows");
   })
   .catch((err) => {
     console.error("Failed to load sheet:", err);
@@ -41,51 +32,56 @@ fetch(SHEET_URL)
       "⚠️ Unable to fetch data. Make sure the sheet is shared as 'Anyone with the link can view'.";
   });
 
-// 🔍 Live search
-document.getElementById("searchBox").addEventListener("input", onSearchInput);
+// live search
+document
+  .getElementById("searchBox")
+  .addEventListener("input", onSearchInput);
 
 function onSearchInput(e) {
-  const q = e.target.value.trim().toLowerCase();
+  const q = e.target.value.trim();
   if (!q) {
     document.getElementById("result").innerHTML = "";
     return;
   }
 
-  // Find the first matching item
-  const match = data.find(
+  const results = data.filter(
     (item) =>
-      item.name.toLowerCase().includes(q) ||
-      (item.sku && item.sku.toLowerCase().includes(q)) ||
-      item.barcodes.some((b) => b.toLowerCase().includes(q))
+      item.barcodes.some((b) => b.endsWith(q)) ||
+      (item.sku && item.sku.toString().endsWith(q))
   );
 
-  if (!match) {
+  if (results.length === 0) {
     document.getElementById("result").innerHTML = "❌ No item found";
   } else {
+    // show first match
+    const item = results[0];
+    const barcodeDisplay =
+      item.barcodes.length > 2
+        ? item.barcodes.slice(0, 2).join(", ") + ", …"
+        : item.barcodes.join(", ");
+
     document.getElementById("result").innerHTML = `
-      <div style="margin-bottom:20px; border-bottom:1px solid #ddd; padding-bottom:10px;">
-        <strong>${escapeHtml(match.name)}</strong><br>
-        SKU: ${escapeHtml(match.sku)}<br>
-        Barcodes: ${escapeHtml(match.barcodes.join(", "))}<br><br>
-        ${
-          match.primaryBarcode
-            ? `<img src="https://barcodeapi.org/api/auto/${encodeURIComponent(
-                match.primaryBarcode
-              )}" alt="Barcode" />`
-            : `<div style='color:red'>⚠️ No valid barcode</div>`
-        }
-      </div>
+      <strong>${escapeHtml(item.name)}</strong><br>
+      SKU: ${escapeHtml(item.sku)}<br>
+      Barcodes: ${escapeHtml(barcodeDisplay)}<br><br>
+      <img src="https://barcodeapi.org/api/code128/${encodeURIComponent(
+        item.primaryBarcode
+      )}" alt="Barcode" />
     `;
   }
 }
 
 function escapeHtml(s) {
-  return String(s || "").replace(/[&<>"']/g, (m) =>
-    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[m]
-  );
+  return String(s || "").replace(/[&<>"']/g, function (m) {
+    return (
+      { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[
+        m
+      ] || m
+    );
+  });
 }
 
-// 🌗 Dark / light mode
+// dark / light toggle
 const themeToggle = document.getElementById("themeToggle");
 themeToggle.addEventListener("click", () => {
   const html = document.documentElement;
