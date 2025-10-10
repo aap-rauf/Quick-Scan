@@ -79,9 +79,9 @@ function onSearchInput(e) {
           <strong>${escapeHtml(item.name)}</strong><br>
           SKU: ${escapeHtml(item.sku)}<br>
           Category: ${escapeHtml(item.category)}<br><br>
-          ${item.primaryBarcode
-            ? `<img src="https://barcodeapi.org/api/auto/${encodeURIComponent(item.primaryBarcode)}" alt="Barcode" />`
-            : `<div style='color:red'>⚠️ No valid barcode</div>`}
+          ${item.primaryBarcode && /^[0-9]{6,}$/.test(item.primaryBarcode)
+  ? `<img src="https://barcodeapi.org/api/auto/${encodeURIComponent(item.primaryBarcode)}" alt="Barcode" />`
+  : `<div style='color:red'>⚠️ Invalid or missing barcode</div>`}
         </div>
       `)
       .join("");
