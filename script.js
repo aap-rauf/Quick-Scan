@@ -82,7 +82,11 @@ function onSearchInput(e) {
 function showFullDetails(item) {
   const allBarcodes = item.barcodes.join(", ");
   const resultDiv = document.getElementById("result");
-  resultDiv.innerHTML = `
+
+  // overlay background
+  const overlay = document.createElement("div");
+  overlay.className = "overlay";
+  overlay.innerHTML = `
     <div class="card expanded">
       <strong>${escapeHtml(item.name)}</strong><br>
       SKU: ${escapeHtml(item.sku)}<br>
@@ -92,13 +96,13 @@ function showFullDetails(item) {
           item.primaryBarcode
         )}" alt="Barcode" />
       </div>
-      <button class="close-btn">Close</button>
     </div>
   `;
+  resultDiv.appendChild(overlay);
 
-  // close button
-  document.querySelector(".close-btn").addEventListener("click", () => {
-    onSearchInput({ target: { value: item.primaryBarcode } });
+  // tap outside card to close
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay) overlay.remove();
   });
 }
 
