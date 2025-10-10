@@ -4,7 +4,7 @@ const SHEET_URL =
 
 let data = [];
 
-// load sheet data
+// Load sheet data
 fetch(SHEET_URL)
   .then((res) => res.text())
   .then((txt) => {
@@ -23,7 +23,7 @@ fetch(SHEET_URL)
       };
     });
 
-    // 🧹 Remove duplicates (same SKU + name + primaryBarcode)
+    // 🧹 Remove duplicates (same SKU + name + first barcode)
     const seen = new Set();
     data = data.filter((item) => {
       const key = `${item.sku}|${item.name}|${item.primaryBarcode}`;
@@ -40,7 +40,7 @@ fetch(SHEET_URL)
       "⚠️ Unable to fetch data. Make sure the sheet is shared as 'Anyone with the link can view'.";
   });
 
-// live search
+// Live search
 document.getElementById("searchBox").addEventListener("input", onSearchInput);
 
 function onSearchInput(e) {
@@ -57,7 +57,7 @@ function onSearchInput(e) {
       item.barcodes.some((b) => b.toLowerCase().includes(q))
   );
 
-  // 🧹 Remove duplicates
+  // Remove duplicate search results (same SKU or barcode)
   const seen = new Set();
   results = results.filter((item) => {
     const key = item.primaryBarcode || item.sku;
@@ -66,6 +66,7 @@ function onSearchInput(e) {
     return true;
   });
 
+  // Display results
   if (results.length === 0) {
     document.getElementById("result").innerHTML = "❌ No item found";
   } else {
@@ -75,7 +76,7 @@ function onSearchInput(e) {
         <div style="margin-bottom:20px; border-bottom:1px solid #ddd; padding-bottom:10px;">
           <strong>${escapeHtml(item.name)}</strong><br>
           SKU: ${escapeHtml(item.sku)}<br>
-          Barcodes: ${item.barcodes.map((b) => escapeHtml(b)).join(", ")}<br><br>
+          Barcodes: ${escapeHtml(item.barcodes.join(", "))}<br><br>
           ${
             item.primaryBarcode
               ? `<img src="https://barcodeapi.org/api/auto/${encodeURIComponent(
@@ -83,27 +84,26 @@ function onSearchInput(e) {
                 )}" alt="Barcode" />`
               : `<div style='color:red'>⚠️ No valid barcode</div>`
           }
-        </div>`
+        </div>
+      `
       )
       .join("");
   }
 }
 
 function escapeHtml(s) {
-  return String(s || "").replace(/[&<>"']/g, (m) => {
-    return (
-      {
-        "&": "&amp;",
-        "<": "&lt;",
-        ">": "&gt;",
-        '"': "&quot;",
-        "'": "&#39;",
-      }[m] || m
-    );
+  return String(s || "").replace(/[&<>"']/g, function (m) {
+    return {
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;",
+    }[m];
   });
 }
 
-// dark / light toggle
+// Dark/light toggle
 const themeToggle = document.getElementById("themeToggle");
 themeToggle.addEventListener("click", () => {
   const html = document.documentElement;
