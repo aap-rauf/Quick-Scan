@@ -14,15 +14,24 @@ fetch(SHEET_URL)
   const barcodeCell = (r.c[2]?.v || "").trim();
   const barcodeList = barcodeCell.split(",").map(b => b.trim()).filter(b => b);
   return {
-    sku: r.c[0]?.v || "",
-    name: r.c[1]?.v || "",
-    barcodes: barcodeList, // store all barcodes
-    primaryBarcode: barcodeList[0] || "", // first one for display
-    category: r.c[3]?.v || "",
+    sku: (r.c[0]?.v || "").trim(),
+    name: (r.c[1]?.v || "").trim(),
+    barcodes: barcodeList,
+    primaryBarcode: barcodeList[0] || "",
+    category: (r.c[3]?.v || "").trim(),
   };
 });
-    console.log('Loaded', data.length, 'rows');
-  })
+
+// 🧹 Remove duplicates (same SKU + name + primaryBarcode)
+const seen = new Set();
+data = data.filter(item => {
+  const key = `${item.sku}|${item.name}|${item.primaryBarcode}`;
+  if (seen.has(key)) return false;
+  seen.add(key);
+  return true;
+});
+
+console.log('Loaded unique', data.length, 'rows');
   .catch((err) => {
     console.error("Failed to load sheet:", err);
     document.getElementById("result").innerText =
