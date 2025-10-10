@@ -51,7 +51,7 @@ function onSearchInput(e) {
   );
 
   if (results.length === 0) {
-    document.getElementById("result").innerHTML = "❌ No item found";
+    document.getElementById("result").innerHTML = "No item found";
   } else {
     // show first match
     const item = results[0];
