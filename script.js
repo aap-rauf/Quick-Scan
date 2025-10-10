@@ -12,30 +12,16 @@ fetch(SHEET_URL)
     const json = JSON.parse(txt.substr(47).slice(0, -2));
     data = json.table.rows.map((r) => {
   const barcodeCell = (r.c[2]?.v || "").trim();
-  const barcodeList = barcodeCell
-    .split(",")
-    .map(b => b.replace(/\D/g, "").trim()) // keep only numbers
-    .filter(b => b.length >= 6); // ignore invalid short codes
-
+  const barcodeList = barcodeCell.split(",").map(b => b.trim()).filter(b => b);
   return {
-    sku: (r.c[0]?.v || "").trim(),
-    name: (r.c[1]?.v || "").trim(),
-    barcodes: barcodeList,
-    primaryBarcode: barcodeList[0] || "",
-    category: (r.c[3]?.v || "").trim(),
+    sku: r.c[0]?.v || "",
+    name: r.c[1]?.v || "",
+    barcodes: barcodeList, // store all barcodes
+    primaryBarcode: barcodeList[0] || "", // first one for display
+    category: r.c[3]?.v || "",
   };
 });
-
-    // 🧹 Remove duplicates (same SKU + name + primaryBarcode)
-    const seen = new Set();
-    data = data.filter(item => {
-      const key = `${item.sku}|${item.name}|${item.primaryBarcode}`;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-
-    console.log('Loaded unique', data.length, 'rows');
+    console.log('Loaded', data.length, 'rows');
   })
   .catch((err) => {
     console.error("Failed to load sheet:", err);
@@ -44,54 +30,37 @@ fetch(SHEET_URL)
   });
 
 // live search
-document.getElementById("searchBox").addEventListener("input", onSearchInput);
+document
+  .getElementById("searchBox")
+  .addEventListener("input", onSearchInput);
 
 function onSearchInput(e) {
-  const q = e.target.value.trim().toLowerCase();
+  const q = e.target.value.trim();
   if (!q) {
     document.getElementById("result").innerHTML = "";
     return;
   }
+  const results = data.filter(item =>
+  item.barcodes.some(b => b.endsWith(q)) ||
+  (item.sku && item.sku.toString().endsWith(q))
+);
 
-  // 🔍 find matches by name, SKU, or any barcode
-  let results = data.filter(item =>
-    item.name.toLowerCase().includes(q) ||
-    (item.sku && item.sku.toString().toLowerCase().includes(q)) ||
-    item.barcodes.some(b => b.toLowerCase().includes(q))
-  );
-
-  // 🧹 remove duplicates again just in case
-  const seen = new Set();
-  results = results.filter(item => {
-    const key = item.primaryBarcode || item.sku;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-
-  // 🟡 show all matches
   if (results.length === 0) {
     document.getElementById("result").innerHTML = "❌ No item found";
   } else {
-    document.getElementById("result").innerHTML = results
-      .map(item => `
-        <div style="margin-bottom:20px; border-bottom:1px solid #ddd; padding-bottom:10px;">
-          <strong>${escapeHtml(item.name)}</strong><br>
-          SKU: ${escapeHtml(item.sku)}<br>
-          Category: ${escapeHtml(item.category)}<br><br>
-          ${item.primaryBarcode && /^[0-9]{6,}$/.test(item.primaryBarcode)
-  ? `<img src="https://barcodeapi.org/api/auto/${encodeURIComponent(item.primaryBarcode)}" alt="Barcode" />`
-  : `<div style='color:red'>⚠️ Invalid or missing barcode</div>`}
-        </div>
-      `)
-      .join("");
+    // show first match
+    const item = results[0];
+    document.getElementById("result").innerHTML = `
+      <strong>${escapeHtml(item.name)}</strong><br>
+      SKU: ${escapeHtml(item.sku)}<br>
+      Category: ${escapeHtml(item.category)}<br><br>
+      <img src="https://barcodeapi.org/api/auto/${encodeURIComponent(item.primaryBarcode)}" alt="Barcode" />
+    `;
   }
 }
 
 function escapeHtml(s) {
-  return String(s || '').replace(/[&<>"']/g, m => ({
-    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"
-  }[m]));
+  return String(s || '').replace(/[&<>"']/g, function(m){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"})[m]; });
 }
 
 // dark / light toggle
