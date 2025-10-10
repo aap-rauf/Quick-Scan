@@ -15,6 +15,7 @@ fetch(SHEET_URL)
         .split(",")
         .map((b) => b.trim())
         .filter((b) => b);
+
       return {
         sku: (r.c[0]?.v || "").trim(),
         name: (r.c[1]?.v || "").trim(),
@@ -23,7 +24,7 @@ fetch(SHEET_URL)
       };
     });
 
-    // 🧹 Remove duplicates (same SKU + name + first barcode)
+    // 🧹 Remove duplicates (same SKU + name + primaryBarcode)
     const seen = new Set();
     data = data.filter((item) => {
       const key = `${item.sku}|${item.name}|${item.primaryBarcode}`;
@@ -40,7 +41,7 @@ fetch(SHEET_URL)
       "⚠️ Unable to fetch data. Make sure the sheet is shared as 'Anyone with the link can view'.";
   });
 
-// Live search
+// 🔍 Live search
 document.getElementById("searchBox").addEventListener("input", onSearchInput);
 
 function onSearchInput(e) {
@@ -50,60 +51,41 @@ function onSearchInput(e) {
     return;
   }
 
-  let results = data.filter(
+  // Find the first matching item
+  const match = data.find(
     (item) =>
       item.name.toLowerCase().includes(q) ||
       (item.sku && item.sku.toLowerCase().includes(q)) ||
       item.barcodes.some((b) => b.toLowerCase().includes(q))
   );
 
-  // Remove duplicate search results (same SKU or barcode)
-  const seen = new Set();
-  results = results.filter((item) => {
-    const key = item.primaryBarcode || item.sku;
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-
-  // Display results
-  if (results.length === 0) {
+  if (!match) {
     document.getElementById("result").innerHTML = "❌ No item found";
   } else {
-    document.getElementById("result").innerHTML = results
-      .map(
-        (item) => `
-        <div style="margin-bottom:20px; border-bottom:1px solid #ddd; padding-bottom:10px;">
-          <strong>${escapeHtml(item.name)}</strong><br>
-          SKU: ${escapeHtml(item.sku)}<br>
-          Barcodes: ${escapeHtml(item.barcodes.join(", "))}<br><br>
-          ${
-            item.primaryBarcode
-              ? `<img src="https://barcodeapi.org/api/auto/${encodeURIComponent(
-                  item.primaryBarcode
-                )}" alt="Barcode" />`
-              : `<div style='color:red'>⚠️ No valid barcode</div>`
-          }
-        </div>
-      `
-      )
-      .join("");
+    document.getElementById("result").innerHTML = `
+      <div style="margin-bottom:20px; border-bottom:1px solid #ddd; padding-bottom:10px;">
+        <strong>${escapeHtml(match.name)}</strong><br>
+        SKU: ${escapeHtml(match.sku)}<br>
+        Barcodes: ${escapeHtml(match.barcodes.join(", "))}<br><br>
+        ${
+          match.primaryBarcode
+            ? `<img src="https://barcodeapi.org/api/auto/${encodeURIComponent(
+                match.primaryBarcode
+              )}" alt="Barcode" />`
+            : `<div style='color:red'>⚠️ No valid barcode</div>`
+        }
+      </div>
+    `;
   }
 }
 
 function escapeHtml(s) {
-  return String(s || "").replace(/[&<>"']/g, function (m) {
-    return {
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;",
-      "'": "&#39;",
-    }[m];
-  });
+  return String(s || "").replace(/[&<>"']/g, (m) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[m]
+  );
 }
 
-// Dark/light toggle
+// 🌗 Dark / light mode
 const themeToggle = document.getElementById("themeToggle");
 themeToggle.addEventListener("click", () => {
   const html = document.documentElement;
