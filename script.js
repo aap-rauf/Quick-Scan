@@ -8,7 +8,6 @@ let data = [];
 fetch(SHEET_URL)
   .then((res) => res.text())
   .then((txt) => {
-    // Google wraps JSON in a prefix, so strip it
     const json = JSON.parse(txt.substr(47).slice(0, -2));
     data = json.table.rows.map((r) => {
       const barcodeCell = (r.c[2]?.v || "").trim();
@@ -20,8 +19,8 @@ fetch(SHEET_URL)
       return {
         sku: r.c[0]?.v || "",
         name: r.c[1]?.v || "",
-        barcodes: barcodeList, // store all barcodes
-        primaryBarcode: barcodeList[0] || "", // first one for display
+        barcodes: barcodeList,
+        primaryBarcode: barcodeList[0] || "",
       };
     });
     console.log("Loaded", data.length, "rows");
@@ -53,22 +52,54 @@ function onSearchInput(e) {
   if (results.length === 0) {
     document.getElementById("result").innerHTML = "No item found";
   } else {
-    // show first match
     const item = results[0];
     const barcodeDisplay =
       item.barcodes.length > 2
-        ? item.barcodes.slice(0, 2).join(", ") + ", …"
+        ? `${item.barcodes.slice(0, 2).join(", ")} <span class='more'>…</span>`
         : item.barcodes.join(", ");
 
     document.getElementById("result").innerHTML = `
+      <div class="card">
+        <strong>${escapeHtml(item.name)}</strong><br>
+        SKU: ${escapeHtml(item.sku)}<br>
+        Barcodes: <span class="barcode-list">${barcodeDisplay}</span><br><br>
+        <div class="barcode-img">
+          <img src="https://barcodeapi.org/api/code128/${encodeURIComponent(
+            item.primaryBarcode
+          )}" alt="Barcode" />
+        </div>
+      </div>
+    `;
+
+    // tap on “…” to expand
+    const more = document.querySelector(".more");
+    if (more) {
+      more.addEventListener("click", () => showFullDetails(item));
+    }
+  }
+}
+
+function showFullDetails(item) {
+  const allBarcodes = item.barcodes.join(", ");
+  const resultDiv = document.getElementById("result");
+  resultDiv.innerHTML = `
+    <div class="card expanded">
       <strong>${escapeHtml(item.name)}</strong><br>
       SKU: ${escapeHtml(item.sku)}<br>
-      Barcodes: ${escapeHtml(barcodeDisplay)}<br><br>
-      <img src="https://barcodeapi.org/api/code128/${encodeURIComponent(
-        item.primaryBarcode
-      )}" alt="Barcode" />
-    `;
-  }
+      Barcodes: ${escapeHtml(allBarcodes)}<br><br>
+      <div class="barcode-img">
+        <img src="https://barcodeapi.org/api/code128/${encodeURIComponent(
+          item.primaryBarcode
+        )}" alt="Barcode" />
+      </div>
+      <button class="close-btn">Close</button>
+    </div>
+  `;
+
+  // close button
+  document.querySelector(".close-btn").addEventListener("click", () => {
+    onSearchInput({ target: { value: item.primaryBarcode } });
+  });
 }
 
 function escapeHtml(s) {
