@@ -89,13 +89,14 @@ html[data-theme="dark"] #result {
   background: var(--card-bg, #fff);
   color: var(--text-color);
   padding: 16px;
-  margin: 12px auto;
   border-radius: 10px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-  width: 100%;
+  width: 90%;
   max-width: 420px;
 
-  /* 🔹 Auto adjust size & allow image to expand naturally */
+  /* ✅ Center the card horizontally */
+  margin: 20px auto;
+
   display: block;
   white-space: normal;
   word-wrap: break-word;
@@ -103,7 +104,6 @@ html[data-theme="dark"] #result {
   height: auto;
   overflow: visible;
 }
-
 .barcode-img {
   display: flex;
   justify-content: center;
