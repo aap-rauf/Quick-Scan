@@ -80,11 +80,13 @@ function onSearchInput(e) {
       </div>
     `;
 
-    // tap on “…” to expand
-    const more = document.querySelector(".more");
-    if (more) {
-      more.addEventListener("click", () => showFullDetails(item));
-    }
+    // tap on “…” to expand barcode list (no images)
+const more = document.querySelector(".more");
+if (more) {
+  more.addEventListener("click", () => {
+    document.querySelector(".barcode-list").innerText = item.barcodes.join(", ");
+  });
+}
   }
 }
 
