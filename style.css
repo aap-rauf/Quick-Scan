@@ -93,14 +93,29 @@ html[data-theme="dark"] #result {
   border-radius: 10px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.2);
   width: 90%;
-  max-width: 400px;
+  max-width: 420px;
 
-  /* 🔹 Auto adjust height based on barcode text */
-  display: inline-block;
+  /* 🔹 Auto adjust size & allow image to expand naturally */
+  display: block;
   white-space: normal;
   word-wrap: break-word;
   overflow-wrap: break-word;
   height: auto;
+  overflow: visible;
+}
+
+.barcode-img {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.barcode-img img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  object-fit: contain;
 }
 
 /* barcode-list default: wrap normally and not overflow the card */
