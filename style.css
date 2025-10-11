@@ -92,13 +92,15 @@ html[data-theme="dark"] #result {
 .card {
   background: var(--card-bg, #fff);
   color: var(--text-color);
-  padding: 16px;
+  padding: 20px;
   border-radius: 10px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-  width: 100%;
-  max-width: 600px;
 
-  /* Center the card horizontally */
+  /* Default (mobile) */
+  width: 95%;
+  max-width: 380px;
+
+  /* Center horizontally */
   margin: 20px auto;
 
   display: block;
@@ -107,6 +109,22 @@ html[data-theme="dark"] #result {
   overflow-wrap: break-word;
   height: auto;
   overflow: visible;
+}
+
+/* Tablets (≥768px) */
+@media (min-width: 768px) {
+  .card {
+    width: 90%;
+    max-width: 500px;
+  }
+}
+
+/* Desktops (≥1024px) */
+@media (min-width: 1024px) {
+  .card {
+    width: 85%;
+    max-width: 650px;
+  }
 }
 .barcode-img {
   display: flex;
