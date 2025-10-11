@@ -75,9 +75,14 @@ main {
   background: var(--card-bg, #fff);
   color: var(--text-color);
   padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  width: 90%;
+  max-width: 480px;
+  margin: 20px auto;
+  text-align: left;
+  transition: all 0.3s ease;
+}
   /* Default (mobile) */
   width: 95%;
   max-width: 380px;
@@ -147,17 +152,16 @@ main {
   margin-left: 4px;
 }
 #result {
-  margin: 20px auto;             /* centers the card horizontally */
-  padding: 20px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.95);
-  max-width: 480px;              /* adjust card width */
-  width: 90%;                    /* responsive width */
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  text-align: left;
-  transition: all 0.3s ease;
+  margin: 20px auto;
+  padding: 0;
+  max-width: 650px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  background: transparent;   /* ✅ remove white background */
+  box-shadow: none;          /* ✅ remove shadow */
+  border-radius: 0;          /* ✅ remove round edges */
 }
-
 /* dark mode card background */
 html[data-theme="dark"] #result {
   background: rgba(30, 30, 30, 0.9);
