@@ -52,10 +52,6 @@ main {
   box-sizing: border-box;
 }
 
-#result img {{
-  max-width: 100%;
-  height: auto;
-}}
 .overlay {
   position: fixed;
   inset: 0;
@@ -166,16 +162,4 @@ main {
 html[data-theme="dark"] #result {
   background: rgba(30, 30, 30, 0.9);
   color: #f0f0f0;
-}
-
-/* make sure barcode image inside fits properly */
-#result img {
-  display: block;
-  margin: 12px auto 0;
-  max-width: 100%;
-  height: auto;
-  object-fit: contain;
-}
-#result h3, #result p {
-  margin: 6px 0;
 }
