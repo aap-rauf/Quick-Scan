@@ -91,11 +91,11 @@ html[data-theme="dark"] #result {
   padding: 16px;
   border-radius: 10px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-  width: 90%;
+  width: 110%;
   max-width: 420px;
 
   /* Center the card horizontally */
-  margin: 5px auto;
+  margin: 20px auto;
 
   display: block;
   white-space: normal;
