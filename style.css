@@ -94,8 +94,8 @@ html[data-theme="dark"] #result {
   width: 90%;
   max-width: 420px;
 
-  /* ✅ Center the card horizontally */
-  margin: 20px auto;
+  /* Center the card horizontally */
+  margin: 5px auto;
 
   display: block;
   white-space: normal;
