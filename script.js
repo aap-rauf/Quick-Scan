@@ -3,6 +3,8 @@ const SHEET_URL =
   "https://docs.google.com/spreadsheets/d/1vtZ2Xmb4eKPFs_v-D-nVNAm2_d2TtqqaMFO93TtaKxM/gviz/tq?tqx=out:json";
 
 let data = [];
+let dataReady = false;
+document.getElementById("result").innerHTML = '<div class="loader"></div><div style="text-align:center;">Loading...</div>';
 
 // load sheet data
 fetch(SHEET_URL)
@@ -24,11 +26,14 @@ fetch(SHEET_URL)
       };
     });
     console.log("Loaded", data.length, "rows");
+    dataReady = true;
+document.getElementById("result").innerHTML =
+  '<div style="text-align:center;color:#ffcc00;">Ready to search items</div>';
   })
   .catch((err) => {
     console.error("Failed to load sheet:", err);
     document.getElementById("result").innerText =
-      "⚠️ Unable to fetch data. Make sure the sheet is shared as 'Anyone with the link can view'.";
+      "Unable to fetch data.";
   });
 
 // live search
@@ -37,6 +42,10 @@ document
   .addEventListener("input", onSearchInput);
 
 function onSearchInput(e) {
+  if (!dataReady) {
+  document.getElementById("result").innerHTML = '<div class="loader"></div><div style="text-align:center;">Please wait, loading data...</div>';
+  return;
+}
   const q = e.target.value.trim();
   if (!q) {
     document.getElementById("result").innerHTML = "";
