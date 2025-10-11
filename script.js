@@ -63,9 +63,9 @@ function onSearchInput(e) {
   } else {
     const item = results[0];
     const barcodeDisplay =
-      item.barcodes.length > 2
-        ? `${item.barcodes.slice(0, 2).join(", ")} <span class='more'>…</span>`
-        : item.barcodes.join(", ");
+  item.barcodes.length > 1
+    ? `${item.barcodes[0]} <span class='more'>…</span>`
+    : item.barcodes[0];
 
     document.getElementById("result").innerHTML = `
       <div class="card">
