@@ -167,3 +167,7 @@ html[data-theme="dark"] #result {
   background: rgba(30, 30, 30, 0.9);
   color: #000000;
 }
+/* Exception: make "Loading…" text yellow */
+html[data-theme="dark"] #result .loading-text {
+  color: #FFD700 !important;  /* bright yellow */
+}
