@@ -95,7 +95,7 @@ html[data-theme="dark"] #result {
   padding: 16px;
   border-radius: 10px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-  width: 95%;
+  width: 100%;
   max-width: 480px;
 
   /* Center the card horizontally */
