@@ -165,5 +165,5 @@ main {
 /* dark mode card background */
 html[data-theme="dark"] #result {
   background: rgba(30, 30, 30, 0.9);
-  color: #f0f0f0;
+  color: #000000;
 }
