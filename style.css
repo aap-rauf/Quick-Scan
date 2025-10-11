@@ -86,14 +86,21 @@ html[data-theme="dark"] #result {
 }
 /* make the card wrap long barcode text and limit height when expanded */
 .card {
-  padding: 15px;
-  border-radius: 10px;
   background: var(--card-bg, #fff);
-  box-shadow: 0 0 8px rgba(0,0,0,0.1);
-  max-width: 95%;
-  margin: 10px auto;
-  word-break: break-word;
-  overflow: hidden;
+  color: var(--text-color);
+  padding: 16px;
+  margin: 12px auto;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  width: 90%;
+  max-width: 400px;
+
+  /* 🔹 Auto adjust height based on barcode text */
+  display: inline-block;
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  height: auto;
 }
 
 /* barcode-list default: wrap normally and not overflow the card */
