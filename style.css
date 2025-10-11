@@ -164,3 +164,32 @@ html[data-theme="dark"] #result {
   font-weight: 700;
   margin-left: 4px;
 }
+#result {
+  margin: 20px auto;             /* centers the card horizontally */
+  padding: 20px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.95);
+  max-width: 480px;              /* adjust card width */
+  width: 90%;                    /* responsive width */
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  text-align: left;
+  transition: all 0.3s ease;
+}
+
+/* dark mode card background */
+html[data-theme="dark"] #result {
+  background: rgba(30, 30, 30, 0.9);
+  color: #f0f0f0;
+}
+
+/* make sure barcode image inside fits properly */
+#result img {
+  display: block;
+  margin: 12px auto 0;
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+#result h3, #result p {
+  margin: 6px 0;
+}
