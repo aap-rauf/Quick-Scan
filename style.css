@@ -172,7 +172,18 @@ html[data-theme="dark"] #result {
   background: #121212 !important;
 }
 
-.loading-text {
-  color: #FFD700 !important; /* always yellow */
-  font-weight: 600;          /* optional: make it stand out */
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(255, 215, 0, 0.3); /* light yellow border */
+  border-top: 4px solid #FFD700;            /* bright yellow top */
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 20px auto;
+  display: block;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
