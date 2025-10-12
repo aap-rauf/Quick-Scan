@@ -169,8 +169,8 @@ html[data-theme="dark"] #result {
 }
 /* Keep card white with black text in dark mode */
 html[data-theme="dark"] #result {
-  background: #ffffff !important;
-  color: #000000 !important;
+  background: #121212 !important;
+  color: #FFD700 !important;
 }
 
 /* Make everything inside the card black in dark mode */
