@@ -1,9 +1,9 @@
 :root {
   --color-bg-light: #ffffff;
-  --color-text-light: #333333;
+  --color-text-light: #FFD700;
   --color-accent: #FFD700; /* yellow */
   --color-bg-dark: #121212;
-  --color-text-dark: #f0f0f0;
+  --color-text-dark: #FFD700;
 }
 
 html[data-theme="light"] {
