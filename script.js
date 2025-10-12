@@ -140,11 +140,23 @@ function escapeHtml(s) {
   });
 }
 
-// dark / light toggle
+// Dark / Light theme toggle with memory
 const themeToggle = document.getElementById("themeToggle");
+const html = document.documentElement;
+
+//  Load saved theme (default: light)
+const savedTheme = localStorage.getItem("theme") || "light";
+html.setAttribute("data-theme", savedTheme);
+themeToggle.textContent = savedTheme === "light" ? "🌙" : "☀️";
+
 themeToggle.addEventListener("click", () => {
-  const html = document.documentElement;
   const current = html.getAttribute("data-theme") || "light";
   const next = current === "light" ? "dark" : "light";
   html.setAttribute("data-theme", next);
+  
+  //  Save theme for next time
+  localStorage.setItem("theme", next);
+
+  // change button icon
+  themeToggle.textContent = next === "light" ? "🌙" : "☀️";
 });
