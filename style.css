@@ -69,33 +69,23 @@ main {
   max-width: 400px;
   width: 90%;
   box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-}
-/* make the card wrap long barcode text and limit height when expanded */
+}/* make the card wrap long barcode text and limit height when expanded */
 .card {
   background: var(--card-bg, #fff);
   color: var(--text-color);
   padding: 20px;
   border-radius: 12px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  width: 90%;
-  max-width: 480px;
-  margin: 20px auto;
-  text-align: left;
-  transition: all 0.3s ease;
-}
-  /* Default (mobile) */
   width: 95%;
   max-width: 380px;
-
-  /* Center horizontally */
   margin: 20px auto;
-
-  display: block;
+  text-align: left;
   white-space: normal;
   word-wrap: break-word;
   overflow-wrap: break-word;
   height: auto;
   overflow: visible;
+  transition: all 0.3s ease;
 }
 
 /* Tablets (≥768px) */
