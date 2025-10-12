@@ -167,3 +167,12 @@ html[data-theme="dark"] #result {
   background: rgba(30, 30, 30, 0.9);
   color: #000000;
 }
+
+html[data-theme="dark"] #result {
+  background: #121212 !important;
+}
+
+.loading-text {
+  color: #FFD700 !important; /* always yellow */
+  font-weight: 600;          /* optional: make it stand out */
+}
