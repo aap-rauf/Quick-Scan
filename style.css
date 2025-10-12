@@ -173,11 +173,6 @@ html[data-theme="dark"] #result {
   color: #FFD700 !important;
 }
 
-/* Make everything inside the card black in dark mode */
-html[data-theme="dark"] #result * {
-  color: #000000 !important;
-}
-
 /* Exception: make "Loading…" text yellow */
 html[data-theme="dark"] #result .loading-text {
   color: #FFD700 !important;  /* bright yellow */
