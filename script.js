@@ -4,7 +4,14 @@ const SHEET_URL =
 
 let data = [];
 let dataReady = false;
-document.getElementById("result").innerHTML = '<div class="loader"></div><div style="text-align:center;">Loading...</div>';
+
+// show initial loader
+document.getElementById("result").innerHTML = `
+  <div class="loader-container">
+    <div class="loader"></div>
+    <div class="loader-text">Loading...</div>
+  </div>
+`;
 
 // load sheet data
 fetch(SHEET_URL)
@@ -25,15 +32,15 @@ fetch(SHEET_URL)
         primaryBarcode: barcodeList[0] || "",
       };
     });
+
     console.log("Loaded", data.length, "rows");
     dataReady = true;
-document.getElementById("result").innerHTML =
-  '<div style="text-align:center;color:#ffcc00;">Ready to search items</div>';
+    document.getElementById("result").innerHTML =
+      '<div style="text-align:center;color:#FFD700;">Ready to search items</div>';
   })
   .catch((err) => {
     console.error("Failed to load sheet:", err);
-    document.getElementById("result").innerText =
-      "Unable to fetch data.";
+    document.getElementById("result").innerText = "Unable to fetch data.";
   });
 
 // live search
@@ -43,9 +50,14 @@ document
 
 function onSearchInput(e) {
   if (!dataReady) {
-  document.getElementById("result").innerHTML = '<div class="loader"></div><div style="text-align:center;">Please wait, loading data...</div>';
-  return;
-}
+    document.getElementById("result").innerHTML = `
+      <div class="loader-container">
+        <div class="loader"></div>
+        <div class="loader-text">Please wait, loading data...</div>
+      </div>`;
+    return;
+  }
+
   const q = e.target.value.trim();
   if (!q) {
     document.getElementById("result").innerHTML = "";
@@ -63,9 +75,9 @@ function onSearchInput(e) {
   } else {
     const item = results[0];
     const barcodeDisplay =
-  item.barcodes.length > 1
-    ? `${item.barcodes[0]} <span class='more'>…</span>`
-    : item.barcodes[0];
+      item.barcodes.length > 1
+        ? `${item.barcodes[0]} <span class='more'>…</span>`
+        : item.barcodes[0];
 
     document.getElementById("result").innerHTML = `
       <div class="card">
@@ -81,12 +93,13 @@ function onSearchInput(e) {
     `;
 
     // tap on “…” to expand barcode list (no images)
-const more = document.querySelector(".more");
-if (more) {
-  more.addEventListener("click", () => {
-    document.querySelector(".barcode-list").innerText = item.barcodes.join(", ");
-  });
-}
+    const more = document.querySelector(".more");
+    if (more) {
+      more.addEventListener("click", () => {
+        document.querySelector(".barcode-list").innerText =
+          item.barcodes.join(", ");
+      });
+    }
   }
 }
 
