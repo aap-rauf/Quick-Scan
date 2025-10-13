@@ -76,7 +76,7 @@ function onSearchInput(e) {
     const item = results[0];
     const barcodeDisplay =
       item.barcodes.length > 1
-        ? `${item.barcodes[0]} <span class='more'>â¦</span>`
+        ? `${item.barcodes[0]} <span class='more'>…</span>`
         : item.barcodes[0];
 
     document.getElementById("result").innerHTML = `
@@ -92,7 +92,7 @@ function onSearchInput(e) {
       </div>
     `;
 
-    // tap on ââ¦â to expand barcode list (no images)
+    // tap on “…” to expand barcode list (no images)
     const more = document.querySelector(".more");
     if (more) {
       more.addEventListener("click", () => {
@@ -147,7 +147,7 @@ const html = document.documentElement;
 //  Load saved theme (default: light)
 const savedTheme = localStorage.getItem("theme") || "light";
 html.setAttribute("data-theme", savedTheme);
-themeToggle.textContent = savedTheme === "light" ? "ð" : "âï¸";
+themeToggle.textContent = savedTheme === "light" ? "🌙" : "☀️";
 
 themeToggle.addEventListener("click", () => {
   const current = html.getAttribute("data-theme") || "light";
@@ -158,5 +158,5 @@ themeToggle.addEventListener("click", () => {
   localStorage.setItem("theme", next);
 
   // change button icon
-  themeToggle.textContent = next === "light" ? "ð" : "âï¸";
+  themeToggle.textContent = next === "light" ? "🌙" : "☀️";
 });
