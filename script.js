@@ -58,51 +58,17 @@ function onSearchInput(e) {
     return;
   }
 
-  const q = e.target.value.trim().toLowerCase(); // 👈 normalize input
+  const q = e.target.value.trim();
   if (!q) {
     document.getElementById("result").innerHTML = "";
     return;
   }
 
-  const results = data.filter((item) => {
-    const sku = (item.sku || "").toLowerCase();
-    const barcodes = item.barcodes.map((b) => b.toLowerCase());
-    return (
-      barcodes.some((b) => b.endsWith(q)) || sku.endsWith(q)
-    );
-  });
-
-  if (results.length === 0) {
-    document.getElementById("result").innerHTML = "No item found";
-  } else {
-    const item = results[0];
-    const barcodeDisplay =
-      item.barcodes.length > 1
-        ? `${item.barcodes[0]} <span class='more'>…</span>`
-        : item.barcodes[0];
-
-    document.getElementById("result").innerHTML = `
-      <div class="card">
-        <strong>${escapeHtml(item.name)}</strong><br>
-        SKU: ${escapeHtml(item.sku)}<br>
-        Barcodes: <span class="barcode-list">${barcodeDisplay}</span><br><br>
-        <div class="barcode-img">
-          <img src="https://barcodeapi.org/api/code128/${encodeURIComponent(
-            item.primaryBarcode
-          )}" alt="Barcode" />
-        </div>
-      </div>
-    `;
-
-    const more = document.querySelector(".more");
-    if (more) {
-      more.addEventListener("click", () => {
-        document.querySelector(".barcode-list").innerText =
-          item.barcodes.join(", ");
-      });
-    }
-  }
-}
+  const results = data.filter(
+    (item) =>
+      item.barcodes.some((b) => b.endsWith(q)) ||
+      (item.sku && item.sku.toString().endsWith(q))
+  );
 
   if (results.length === 0) {
     document.getElementById("result").innerHTML = "No item found";
