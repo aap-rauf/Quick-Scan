@@ -26,7 +26,7 @@ fetch(SHEET_URL)
     .filter((b) => b);
 
   return {
-    sku: (r.c[0]?.v || "").toLowerCase(),
+    sku: (r.c[0]?.v || "",
     name: r.c[1]?.v || "",
     barcodes: barcodeList,
     primaryBarcode: barcodeList[0] || "",
