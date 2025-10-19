@@ -23,59 +23,52 @@ async function loadSheetData() {
   const cachedData = localStorage.getItem(CACHE_KEY);
   const cachedTime = localStorage.getItem(CACHE_TIME_KEY);
 
-  // if cache exists and is recent, use it
-  if (cachedData && cachedTime && now - cachedTime < CACHE_DURATION) {
-    console.log("Loaded data from cache");
+  // ✅ Step 1: If cache exists → load instantly
+  if (cachedData) {
+    console.log("✅ Loaded data from cache");
     data = JSON.parse(cachedData);
     dataReady = true;
     document.getElementById("result").innerHTML =
-      '<div style="text-align:center;color:#FFD700;">Ready to search items</div>';
-    return;
+      '<div style="text-align:center;color:#FFD700;">Ready to search items (cached)</div>';
   }
 
-  // otherwise, fetch fresh sheet
-  document.getElementById("result").innerHTML = `
-    <div class="loader-container">
-      <div class="loader"></div>
-      <div class="loader-text">Updating sheet data...</div>
-    </div>
-  `;
+  // ✅ Step 2: If cache is missing OR expired (12 hours) → refresh in background
+  if (!cachedTime || now - cachedTime > CACHE_DURATION) {
+    console.log("♻️ Cache expired or missing — fetching fresh data...");
+    try {
+      const res = await fetch(SHEET_URL);
+      const txt = await res.text();
+      const json = JSON.parse(txt.substr(47).slice(0, -2));
 
-  try {
-    const res = await fetch(SHEET_URL);
-    const txt = await res.text();
-    const json = JSON.parse(txt.substr(47).slice(0, -2));
-    const parsed = json.table.rows.map((r) => {
-      const skuOriginal = r.c[0]?.v || "";
-      const nameOriginal = r.c[1]?.v || "";
-      const barcodeCell = (r.c[2]?.v || "").trim();
-      const barcodeList = barcodeCell
-        .split(",")
-        .map((b) => b.trim())
-        .filter((b) => b);
+      const parsed = json.table.rows.map((r) => {
+        const skuOriginal = r.c[0]?.v || "";
+        const nameOriginal = r.c[1]?.v || "";
+        const barcodeCell = (r.c[2]?.v || "").trim();
+        const barcodeList = barcodeCell
+          .split(",")
+          .map((b) => b.trim())
+          .filter((b) => b);
 
-      return {
-        sku: skuOriginal,
-        name: nameOriginal,
-        barcodes: barcodeList,
-        primaryBarcode: barcodeList[0] || "",
-        searchSku: skuOriginal.toLowerCase(),
-        searchBarcodes: barcodeList.map((b) => b.toLowerCase()),
-      };
-    });
+        return {
+          sku: skuOriginal,
+          name: nameOriginal,
+          barcodes: barcodeList,
+          primaryBarcode: barcodeList[0] || "",
+          searchSku: skuOriginal.toLowerCase(),
+          searchBarcodes: barcodeList.map((b) => b.toLowerCase()),
+        };
+      });
 
-    // save in cache
-    localStorage.setItem(CACHE_KEY, JSON.stringify(parsed));
-    localStorage.setItem(CACHE_TIME_KEY, now.toString());
+      // ✅ Save new data
+      localStorage.setItem(CACHE_KEY, JSON.stringify(parsed));
+      localStorage.setItem(CACHE_TIME_KEY, now.toString());
 
-    data = parsed;
-    dataReady = true;
-    document.getElementById("result").innerHTML =
-      '<div style="text-align:center;color:#FFD700;">Ready to search items</div>';
-    console.log("Fetched and cached", data.length, "rows");
-  } catch (err) {
-    console.error("Failed to load sheet:", err);
-    document.getElementById("result").innerText = "Unable to fetch data.";
+      data = parsed;
+      dataReady = true;
+      console.log("🟢 Sheet refreshed and cached", data.length, "rows");
+    } catch (err) {
+      console.error("❌ Failed to fetch new sheet data:", err);
+    }
   }
 }
 
