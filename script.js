@@ -19,19 +19,25 @@ fetch(SHEET_URL)
   .then((txt) => {
     const json = JSON.parse(txt.substr(47).slice(0, -2));
     data = json.table.rows.map((r) => {
-      const barcodeCell = (r.c[2]?.v || "").trim();
-      const barcodeList = barcodeCell
-        .split(",")
-        .map((b) => b.trim())
-        .filter((b) => b);
+  const skuOriginal = r.c[0]?.v || "";
+  const nameOriginal = r.c[1]?.v || "";
+  const barcodeCell = (r.c[2]?.v || "").trim();
+  const barcodeList = barcodeCell
+    .split(",")
+    .map((b) => b.trim())
+    .filter((b) => b);
 
-      return {
-        sku: r.c[0]?.v || "",
-        name: r.c[1]?.v || "",
-        barcodes: barcodeList,
-        primaryBarcode: barcodeList[0] || "",
-      };
-    });
+  return {
+    sku: skuOriginal, // keep original case for display
+    name: nameOriginal, // keep original case
+    barcodes: barcodeList,
+    primaryBarcode: barcodeList[0] || "",
+
+    // lowercase copies for searching
+    searchSku: skuOriginal.toLowerCase(),
+    searchBarcodes: barcodeList.map((b) => b.toLowerCase()),
+  };
+});
 
     console.log("Loaded", data.length, "rows");
     dataReady = true;
@@ -58,17 +64,17 @@ function onSearchInput(e) {
     return;
   }
 
-  const q = e.target.value.trim();
-  if (!q) {
-    document.getElementById("result").innerHTML = "";
-    return;
-  }
+  const q = e.target.value.trim().toLowerCase();
+if (!q) {
+  document.getElementById("result").innerHTML = "";
+  return;
+}
 
-  const results = data.filter(
-    (item) =>
-      item.barcodes.some((b) => b.endsWith(q)) ||
-      (item.sku && item.sku.toString().endsWith(q))
-  );
+const results = data.filter(
+  (item) =>
+    item.searchBarcodes.some((b) => b.endsWith(q)) ||
+    item.searchSku.endsWith(q)
+);
 
   if (results.length === 0) {
     document.getElementById("result").innerHTML = "No item found";
