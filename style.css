@@ -192,3 +192,35 @@ html[data-theme="dark"] #result {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+@import url('https://fonts.googleapis.com/css2?family=Pacifico&display=swap');
+
+#signature {
+  position: fixed;
+  bottom: 12px;
+  right: 15px;
+  font-family: 'Pacifico', cursive;
+  font-size: 20px;
+  color: var(--signature-color);
+  opacity: 0.8;
+  pointer-events: none;
+  user-select: none;
+  transition: color 0.3s ease, opacity 0.3s ease;
+}
+
+/* Signature color for light and dark themes */
+[data-theme="light"] {
+  --signature-color: #FFD700;
+}
+
+[data-theme="dark"] {
+  --signature-color: #FFD700; /* gold for dark mode */
+}
+
+/* Optional fade-in animation */
+#signature {
+  animation: fadeIn 1s ease-in-out;
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 0.8; }
+}
