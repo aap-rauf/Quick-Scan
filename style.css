@@ -197,7 +197,7 @@ html[data-theme="dark"] #result {
 #signature {
   position: fixed;
   bottom: 12px;
-  right: 25px;
+  right: 45px;
   font-family: 'Pacifico', cursive;
   font-size: 20px;
   color: var(--signature-color);
