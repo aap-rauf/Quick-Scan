@@ -46,7 +46,17 @@ fetch(SHEET_URL)
   })
   .catch((err) => {
     console.error("Failed to load sheet:", err);
-    document.getElementById("result").innerText = "Unable to fetch data.";
+    document.getElementById("result").innerHTML = `
+  <div style="
+    color: var(--text-color, #FFD700);
+    text-align: center;
+    font-weight: 500;
+    margin-top: 20px;
+  ">
+    Unable to load data.<br>
+    Please check your network connection and reopen the app.
+  </div>
+`;
   });
 
 // live search
