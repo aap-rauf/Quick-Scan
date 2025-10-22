@@ -112,7 +112,7 @@ JsBarcode("#barcode", item.primaryBarcode, {
   lineColor: "#000",        // Black bars
   background: "#fff",       // White background
   width: 2,
-  height: 60,
+  height: 90,
   displayValue: true,
 });
 
