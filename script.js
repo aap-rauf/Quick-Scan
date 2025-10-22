@@ -111,7 +111,7 @@ JsBarcode("#barcode", item.primaryBarcode, {
   format: "code128",
   lineColor: "#000",        // Black bars
   background: "#fff",       // White background
-  width: 3,
+  width: 2.5,
   height: 90,
   displayValue: true,
 });
