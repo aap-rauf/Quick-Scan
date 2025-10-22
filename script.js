@@ -101,20 +101,12 @@ const results = data.filter(
         SKU: ${escapeHtml(item.sku)}<br>
         Barcodes: <span class="barcode-list">${barcodeDisplay}</span><br><br>
         <div class="barcode-img">
-          <svg id="barcode"></svg>
+          <img src="https://barcodeapi.org/api/code128/${encodeURIComponent(
+            item.primaryBarcode
+          )}" alt="Barcode" />
         </div>
       </div>
     `;
-    
-    // Generate offline barcode (same look)
-JsBarcode("#barcode", item.primaryBarcode, {
-  format: "code128",
-  lineColor: "#000",        // Black bars
-  background: "#fff",       // White background
-  width: 2.5,
-  height: 90,
-  displayValue: true,
-});
 
     // tap on “…” to expand barcode list (no images)
     const more = document.querySelector(".more");
