@@ -87,7 +87,18 @@ const results = data.filter(
 );
 
   if (results.length === 0) {
-    document.getElementById("result").innerHTML = "No item found";
+    document.getElementById("result").innerHTML = `
+  <div style="
+    color: var(--text-color, #FFD700);
+    text-align: center;
+    font-weight: 500;
+    margin-top: 20px;
+    letter-spacing: 0.5px;
+    font-size: 1rem;
+  ">
+    No matching item found
+  </div>
+`;
   } else {
     const item = results[0];
     const barcodeDisplay =
