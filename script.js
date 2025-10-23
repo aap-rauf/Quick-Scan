@@ -13,94 +13,92 @@ document.getElementById("result").innerHTML = `
   </div>
 `;
 
-// ⚡️ Optimized Sheet Loader with Smart Cache
-const CACHE_KEY = "sheetDataCache";
-const CACHE_TIME_KEY = "sheetDataCacheTime";
-const CACHE_MAX_AGE = 12 * 60 * 60 * 1000; // 12 hours
+// 🚀 iOS-friendly Cached Loader for Google Sheet
+const CACHE_KEY = "sheetCacheData";
+const CACHE_TIME_KEY = "sheetCacheTime";
+const CACHE_DURATION = 12 * 60 * 60 * 1000; // 12 hours
+const loader = document.getElementById("result");
 
-loadSheetData();
+// show initial loader
+loader.innerHTML = `
+  <div class="loader-container">
+    <div class="loader"></div>
+    <div class="loader-text">Loading...</div>
+  </div>
+`;
 
-async function loadSheetData() {
-  const now = Date.now();
-  const cachedData = localStorage.getItem(CACHE_KEY);
-  const cachedTime = localStorage.getItem(CACHE_TIME_KEY);
+loadData();
 
-  // If cache exists and still valid → use it
-  if (cachedData && cachedTime && now - cachedTime < CACHE_MAX_AGE) {
-    try {
-      data = JSON.parse(cachedData);
-      dataReady = true;
-      console.log("✅ Loaded from cache:", data.length, "rows");
-      document.getElementById("result").innerHTML =
-        '<div style="text-align:center;color:var(--text-color,#FFD700);font-weight:500;margin-top:20px;letter-spacing:0.5px;">Ready to search items</div>';
-
-      // Fetch in background (to silently refresh cache)
-      refreshSheetData();
-      return;
-    } catch (e) {
-      console.warn("Cache parse failed. Reloading fresh data.");
-    }
-  }
-
-  // Otherwise → fetch directly
-  await refreshSheetData();
-}
-
-async function refreshSheetData() {
+async function loadData() {
   try {
-    const res = await fetch(SHEET_URL, { cache: "no-store" });
-    const txt = await res.text();
+    const now = Date.now();
+    const cached = localStorage.getItem(CACHE_KEY);
+    const cachedTime = localStorage.getItem(CACHE_TIME_KEY);
 
-    // Sometimes Google adds a few chars before JSON, clean safely
-    const jsonStart = txt.indexOf("{");
-    const jsonText = txt.substring(jsonStart, txt.lastIndexOf("}") + 1);
-    const json = JSON.parse(jsonText);
+    if (cached && cachedTime && now - cachedTime < CACHE_DURATION) {
+      data = JSON.parse(cached);
+      dataReady = true;
+      console.log("✅ Loaded cached data:", data.length, "rows");
 
-    if (!json.table || !json.table.rows) throw new Error("Invalid sheet format");
+      loader.innerHTML =
+        '<div style="text-align:center;color:var(--text-color,#FFD700);font-weight:500;margin-top:20px;letter-spacing:0.5px;">Ready to search items (Offline)</div>';
 
-    data = json.table.rows.map((r) => {
-      const skuOriginal = r.c[0]?.v || "";
-      const nameOriginal = r.c[1]?.v || "";
-      const barcodeCell = (r.c[2]?.v || "").trim();
-      const barcodeList = barcodeCell
-        .split(",")
-        .map((b) => b.trim())
-        .filter((b) => b);
-
-      return {
-        sku: skuOriginal,
-        name: nameOriginal,
-        barcodes: barcodeList,
-        primaryBarcode: barcodeList[0] || "",
-        searchSku: skuOriginal.toLowerCase(),
-        searchBarcodes: barcodeList.map((b) => b.toLowerCase()),
-      };
-    });
-
-    localStorage.setItem(CACHE_KEY, JSON.stringify(data));
-    localStorage.setItem(CACHE_TIME_KEY, now.toString());
-
-    dataReady = true;
-    console.log("✅ Refreshed from Sheet:", data.length, "rows");
-    document.getElementById("result").innerHTML =
-      '<div style="text-align:center;color:var(--text-color,#FFD700);font-weight:500;margin-top:20px;letter-spacing:0.5px;">Ready to search items</div>';
-  } catch (err) {
-    console.error("❌ Failed to load sheet:", err);
-    if (!dataReady) {
-      document.getElementById("result").innerHTML = `
-        <div style="
-          color: var(--text-color, #FFD700);
-          text-align: center;
-          font-weight: 500;
-          margin-top: 20px;
-        ">
-          Unable to load data.<br>
-          Please check your network connection and reopen the app.
-        </div>
-      `;
+      // silently refresh in background (non-blocking)
+      refreshData();
+      return;
     }
+
+    // no valid cache → fetch fresh
+    await refreshData();
+  } catch (err) {
+    console.error("❌ Load failed:", err);
+    loader.innerHTML = `
+      <div style="color: var(--text-color,#FFD700); text-align:center; font-weight:500; margin-top:20px;">
+        Unable to load data.<br>Please connect to the internet and reopen the app.
+      </div>`;
   }
 }
+
+async function refreshData() {
+  const res = await fetch(SHEET_URL, { cache: "no-store" });
+  const txt = await res.text();
+
+  // Find JSON part safely (iOS-safe parsing)
+  const jsonStart = txt.indexOf("{");
+  const jsonEnd = txt.lastIndexOf("}") + 1;
+  const jsonText = txt.substring(jsonStart, jsonEnd);
+  const json = JSON.parse(jsonText);
+
+  const rows = json.table?.rows || [];
+
+  data = rows.map((r) => {
+    const sku = r.c[0]?.v || "";
+    const name = r.c[1]?.v || "";
+    const barcodeStr = (r.c[2]?.v || "").trim();
+    const barcodes = barcodeStr
+      .split(",")
+      .map((b) => b.trim())
+      .filter(Boolean);
+
+    return {
+      sku,
+      name,
+      barcodes,
+      primaryBarcode: barcodes[0] || "",
+      searchSku: sku.toLowerCase(),
+      searchBarcodes: barcodes.map((b) => b.toLowerCase()),
+    };
+  });
+
+  // Save cache
+  localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+  localStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
+
+  dataReady = true;
+  console.log("✅ Refreshed data:", data.length, "rows");
+
+  loader.innerHTML =
+    '<div style="text-align:center;color:var(--text-color,#FFD700);font-weight:500;margin-top:20px;letter-spacing:0.5px;">Ready to search items</div>';
 }
 // live search
 document
