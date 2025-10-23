@@ -42,7 +42,7 @@ fetch(SHEET_URL)
     console.log("Loaded", data.length, "rows");
     dataReady = true;
     document.getElementById("result").innerHTML =
-      '<div style="text-align:center;color:#FFD700;">Ready to search items</div>';
+      '<div style="text-align:center;color:var(--text-color,#FFD700);font-weight:500;margin-top:20px;letter-spacing:0.5px;">Ready to search items</div>';
   })
   .catch((err) => {
     console.error("Failed to load sheet:", err);
