@@ -13,52 +13,85 @@ document.getElementById("result").innerHTML = `
   </div>
 `;
 
-// load sheet data
-fetch(SHEET_URL)
-  .then((res) => res.text())
-  .then((txt) => {
+// ⚡️ Optimized sheet loader with caching
+const CACHE_KEY = "sheetDataCache";
+const CACHE_TIME_KEY = "sheetDataCacheTime";
+const CACHE_MAX_AGE = 12 * 60 * 60 * 1000; // 12 hours
+
+initSheet();
+
+async function initSheet() {
+  const cachedData = localStorage.getItem(CACHE_KEY);
+  const cachedTime = localStorage.getItem(CACHE_TIME_KEY);
+  const now = Date.now();
+
+  // Use cached data if recent
+  if (cachedData && cachedTime && now - cachedTime < CACHE_MAX_AGE) {
+    try {
+      data = JSON.parse(cachedData);
+      dataReady = true;
+      console.log("Loaded from cache:", data.length, "rows");
+      document.getElementById("result").innerHTML =
+        '<div style="text-align:center;color:var(--text-color,#FFD700);font-weight:500;margin-top:20px;letter-spacing:0.5px;">Ready to search items</div>';
+      refreshSheetData(); // refresh in background
+      return;
+    } catch (err) {
+      console.warn("Cache corrupted, refetching...");
+    }
+  }
+
+  // No cache → fetch now
+  await refreshSheetData();
+}
+
+async function refreshSheetData() {
+  try {
+    const res = await fetch(SHEET_URL);
+    const txt = await res.text();
     const json = JSON.parse(txt.substr(47).slice(0, -2));
+
     data = json.table.rows.map((r) => {
-  const skuOriginal = r.c[0]?.v || "";
-  const nameOriginal = r.c[1]?.v || "";
-  const barcodeCell = (r.c[2]?.v || "").trim();
-  const barcodeList = barcodeCell
-    .split(",")
-    .map((b) => b.trim())
-    .filter((b) => b);
+      const skuOriginal = r.c[0]?.v || "";
+      const nameOriginal = r.c[1]?.v || "";
+      const barcodeCell = (r.c[2]?.v || "").trim();
+      const barcodeList = barcodeCell
+        .split(",")
+        .map((b) => b.trim())
+        .filter((b) => b);
 
-  return {
-    sku: skuOriginal, // keep original case for display
-    name: nameOriginal, // keep original case
-    barcodes: barcodeList,
-    primaryBarcode: barcodeList[0] || "",
+      return {
+        sku: skuOriginal,
+        name: nameOriginal,
+        barcodes: barcodeList,
+        primaryBarcode: barcodeList[0] || "",
+        searchSku: skuOriginal.toLowerCase(),
+        searchBarcodes: barcodeList.map((b) => b.toLowerCase()),
+      };
+    });
 
-    // lowercase copies for searching
-    searchSku: skuOriginal.toLowerCase(),
-    searchBarcodes: barcodeList.map((b) => b.toLowerCase()),
-  };
-});
-
-    console.log("Loaded", data.length, "rows");
+    localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+    localStorage.setItem(CACHE_TIME_KEY, Date.now());
     dataReady = true;
+    console.log("Refreshed sheet:", data.length, "rows");
     document.getElementById("result").innerHTML =
       '<div style="text-align:center;color:var(--text-color,#FFD700);font-weight:500;margin-top:20px;letter-spacing:0.5px;">Ready to search items</div>';
-  })
-  .catch((err) => {
+  } catch (err) {
     console.error("Failed to load sheet:", err);
-    document.getElementById("result").innerHTML = `
-  <div style="
-    color: var(--text-color, #FFD700);
-    text-align: center;
-    font-weight: 500;
-    margin-top: 20px;
-  ">
-    Unable to load data.<br>
-    Please check your network connection and reopen the app.
-  </div>
-`;
-  });
-
+    if (!dataReady) {
+      document.getElementById("result").innerHTML = `
+        <div style="
+          color: var(--text-color, #FFD700);
+          text-align: center;
+          font-weight: 500;
+          margin-top: 20px;
+        ">
+          Unable to load data.<br>
+          Please check your network connection and reopen the app.
+        </div>
+      `;
+    }
+  }
+}
 // live search
 document
   .getElementById("searchBox")
