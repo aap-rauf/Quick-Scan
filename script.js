@@ -46,7 +46,7 @@ fetch(SHEET_URL)
   })
  .catch((err) => {
   console.error("Failed to load sheet:", err);
-
+  loadFailed = true;
   document.getElementById("result").innerHTML = `
   <div style="
     color: var(--text-color, #FFD700);
