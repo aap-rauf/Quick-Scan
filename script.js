@@ -44,20 +44,46 @@ fetch(SHEET_URL)
     document.getElementById("result").innerHTML =
       '<div style="text-align:center;color:var(--text-color,#FFD700);font-weight:500;margin-top:20px;letter-spacing:0.5px;">Ready to search items</div>';
   })
-  .catch((err) => {
-    console.error("Failed to load sheet:", err);
-    document.getElementById("result").innerHTML = `
+ .catch((err) => {
+  console.error("Failed to load sheet:", err);
+
+  document.getElementById("result").innerHTML = `
   <div style="
     color: var(--text-color, #FFD700);
     text-align: center;
     font-weight: 500;
     margin-top: 20px;
+    letter-spacing: 0.5px;
   ">
     Unable to load data.<br>
-    Please check your network connection and reopen the app.
+    Please check your internet connection.<br><br>
+    <button id="reloadBtn" style="
+      background: transparent;
+      border: 1px solid var(--text-color, #FFD700);
+      color: var(--text-color, #FFD700);
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: 0.3s;
+    ">⟳ Reload</button>
   </div>
-`;
-  });
+  `;
+
+  // attach reload button click
+  const reloadBtn = document.getElementById("reloadBtn");
+  if (reloadBtn) {
+    reloadBtn.addEventListener("click", () => {
+      document.getElementById("result").innerHTML = `
+        <div class="loader-container">
+          <div class="loader"></div>
+          <div class="loader-text">Reloading...</div>
+        </div>`;
+      location.reload(); // reload the app
+    });
+  }
+});
 
 // live search
 document
