@@ -187,3 +187,24 @@ themeToggle.addEventListener("click", () => {
   // change button icon
   themeToggle.textContent = next === "light" ? "🌙" : "☀️";
 });
+// Tap on "Easy Scan" to reload sheet data manually
+document.getElementById("reloadApp").addEventListener("click", () => {
+  const resultDiv = document.getElementById("result");
+  resultDiv.innerHTML = `
+    <div class="loader-container">
+      <div class="loader"></div>
+      <div class="loader-text">Reloading data...</div>
+    </div>
+  `;
+
+  // Clear current data and reload
+  localStorage.removeItem("sheetCSVCache");
+  localStorage.removeItem("sheetCSVTime");
+
+  // Re-fetch the CSV data
+  loadCSV();
+
+  // Optional: smooth fade effect for better UX
+  resultDiv.style.opacity = "0.8";
+  setTimeout(() => (resultDiv.style.opacity = "1"), 400);
+});
