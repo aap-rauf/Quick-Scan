@@ -1,8 +1,8 @@
-// URL to fetch your sheet as JSON
+// ✅ Google Sheet URL
 const SHEET_URL =
   "https://docs.google.com/spreadsheets/d/1vtZ2Xmb4eKPFs_v-D-nVNAm2_d2TtqqaMFO93TtaKxM/gviz/tq?tqx=out:json";
 
-const CACHE_KEY = "easyScanSheetCache_v1"; // cache name
+const CACHE_KEY = "easyScanSheetCache_v2";
 let data = [];
 let dataReady = false;
 let loadFailed = false;
@@ -13,36 +13,50 @@ const searchBox = document.getElementById("searchBox");
 // initial loader
 resultEl.innerHTML = loaderHTML("Loading...");
 
-// Try to load from cache first
-const cached = localStorage.getItem(CACHE_KEY);
-if (cached) {
+// Try loading cached data first
+loadFromCache();
+
+// Try background refresh silently
+refreshSheetInBackground();
+
+// ------------------------
+// FUNCTIONS
+// ------------------------
+function loadFromCache() {
   try {
-    data = JSON.parse(cached);
-    if (Array.isArray(data) && data.length > 0) {
-      dataReady = true;
-      resultEl.innerHTML = `
-        <div style="text-align:center;color:var(--text-color,#FFD700);font-weight:500;margin-top:20px;">
-          Ready to search items (cached)
-        </div>`;
-      // Try background refresh silently
-      refreshSheetInBackground();
-    } else {
-      fetchSheet(); // no valid cache
+    const cached = localStorage.getItem(CACHE_KEY);
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        data = parsed;
+        dataReady = true;
+        console.log("Loaded from cache ✅", data.length, "rows");
+        resultEl.innerHTML = `
+          <div style="text-align:center;color:var(--text-color,#FFD700);font-weight:500;margin-top:20px;">
+            Ready to search items (cached)
+          </div>`;
+        return;
+      }
     }
-  } catch {
-    fetchSheet(); // parse error
+  } catch (err) {
+    console.warn("Cache error:", err);
   }
-} else {
-  fetchSheet(); // no cache found
+
+  // If no valid cache, fetch fresh data
+  fetchSheet();
 }
 
-// Main fetch function
 function fetchSheet() {
-  resultEl.innerHTML = loaderHTML("Loading data...");
+  resultEl.innerHTML = loaderHTML("Fetching data...");
   fetch(SHEET_URL)
     .then((res) => res.text())
     .then((txt) => {
-      const json = JSON.parse(txt.substr(47).slice(0, -2));
+      // Fix for Google gviz format (starts with "/*O_o*/")
+      const start = txt.indexOf("{");
+      const end = txt.lastIndexOf("}");
+      if (start === -1 || end === -1) throw new Error("Invalid sheet data");
+      const json = JSON.parse(txt.substring(start, end + 1));
+
       data = json.table.rows.map((r) => {
         const skuOriginal = r.c[0]?.v || "";
         const nameOriginal = r.c[1]?.v || "";
@@ -51,6 +65,7 @@ function fetchSheet() {
           .split(",")
           .map((b) => b.trim())
           .filter((b) => b);
+
         return {
           sku: skuOriginal,
           name: nameOriginal,
@@ -61,8 +76,8 @@ function fetchSheet() {
         };
       });
 
-      localStorage.setItem(CACHE_KEY, JSON.stringify(data)); // save for next time
-      console.log("Loaded", data.length, "rows, cached ✅");
+      localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+      console.log("Fetched & cached ✅", data.length, "rows");
       dataReady = true;
       resultEl.innerHTML = `
         <div style="text-align:center;color:var(--text-color,#FFD700);font-weight:500;margin-top:20px;">
@@ -70,29 +85,20 @@ function fetchSheet() {
         </div>`;
     })
     .catch((err) => {
-      console.error("Failed to load sheet:", err);
+      console.error("Fetch failed:", err);
       loadFailed = true;
       resultEl.innerHTML = `
-        <div style="
-          color: var(--text-color, #FFD700);
-          text-align: center;
-          font-weight: 500;
-          margin-top: 20px;
-        ">
-          Unable to load data.<br>
-          Please check your connection.<br><br>
+        <div style="color:var(--text-color,#FFD700);text-align:center;margin-top:20px;">
+          Unable to load data.<br>Please check your connection.<br><br>
           <button id="reloadBtn" style="
-            background: transparent;
-            border: 1px solid var(--text-color, #FFD700);
-            color: var(--text-color, #FFD700);
-            border-radius: 8px;
-            padding: 8px 16px;
-            font-size: 15px;
-            font-weight: 500;
-            cursor: pointer;
+            background:transparent;
+            border:1px solid var(--text-color,#FFD700);
+            color:var(--text-color,#FFD700);
+            border-radius:8px;
+            padding:8px 16px;
+            cursor:pointer;
           ">⟳ Reload</button>
-        </div>
-      `;
+        </div>`;
       document.getElementById("reloadBtn").addEventListener("click", () => {
         resultEl.innerHTML = loaderHTML("Reloading...");
         fetchSheet();
@@ -100,12 +106,16 @@ function fetchSheet() {
     });
 }
 
-// Background refresh (used when cached data exists)
+// Background refresh after load
 function refreshSheetInBackground() {
   fetch(SHEET_URL)
     .then((res) => res.text())
     .then((txt) => {
-      const json = JSON.parse(txt.substr(47).slice(0, -2));
+      const start = txt.indexOf("{");
+      const end = txt.lastIndexOf("}");
+      if (start === -1 || end === -1) return;
+      const json = JSON.parse(txt.substring(start, end + 1));
+
       const fresh = json.table.rows.map((r) => {
         const skuOriginal = r.c[0]?.v || "";
         const nameOriginal = r.c[1]?.v || "";
@@ -123,6 +133,7 @@ function refreshSheetInBackground() {
           searchBarcodes: barcodeList.map((b) => b.toLowerCase()),
         };
       });
+
       localStorage.setItem(CACHE_KEY, JSON.stringify(fresh));
       console.log("Background refresh complete ✅");
     })
@@ -131,21 +142,20 @@ function refreshSheetInBackground() {
     });
 }
 
-// Handle Easy Scan tap → refresh and cache again
+// Handle Easy Scan → force reload from sheet
 const easyScanBtn = document.getElementById("easyScan");
 if (easyScanBtn) {
   easyScanBtn.addEventListener("click", () => {
-    resultEl.innerHTML = loaderHTML("Reloading latest data...");
+    resultEl.innerHTML = loaderHTML("Refreshing...");
     fetchSheet();
   });
 }
 
-// live search
-searchBox.addEventListener("input", onSearchInput);
-
-function onSearchInput(e) {
-  if (loadFailed) return;
-  if (!dataReady) return;
+// ------------------------
+// SEARCH
+// ------------------------
+searchBox.addEventListener("input", (e) => {
+  if (loadFailed || !dataReady) return;
 
   const q = e.target.value.trim().toLowerCase();
   if (!q) {
@@ -161,13 +171,7 @@ function onSearchInput(e) {
 
   if (results.length === 0) {
     resultEl.innerHTML = `
-      <div style="
-        color: var(--text-color, #FFD700);
-        text-align: center;
-        font-weight: 500;
-        margin-top: 20px;
-        font-size: 1rem;
-      ">
+      <div style="color:var(--text-color,#FFD700);text-align:center;margin-top:20px;font-weight:500;">
         No matching item found
       </div>`;
   } else {
@@ -188,6 +192,7 @@ function onSearchInput(e) {
           )}" alt="Barcode" />
         </div>
       </div>`;
+
     const more = document.querySelector(".more");
     if (more) {
       more.addEventListener("click", () => {
@@ -196,8 +201,11 @@ function onSearchInput(e) {
       });
     }
   }
-}
+});
 
+// ------------------------
+// HELPERS
+// ------------------------
 function loaderHTML(text) {
   return `
     <div class="loader-container">
@@ -216,7 +224,9 @@ function escapeHtml(s) {
   });
 }
 
-// Theme toggle (same as before)
+// ------------------------
+// THEME TOGGLE
+// ------------------------
 const themeToggle = document.getElementById("themeToggle");
 const html = document.documentElement;
 const savedTheme = localStorage.getItem("theme") || "light";
