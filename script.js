@@ -1,20 +1,19 @@
 // =============================
-// ⚡ EASY SCAN APP - Optimized JS
+// ⚡ EASY SCAN APP (iOS SAFE + FAST)
 // =============================
 
-// Google Sheet source
 const SHEET_URL =
   "https://docs.google.com/spreadsheets/d/1vtZ2Xmb4eKPFs_v-D-nVNAm2_d2TtqqaMFO93TtaKxM/gviz/tq?tqx=out:json";
 
 let data = [];
 let dataReady = false;
 let loadFailed = false;
-const CACHE_KEY = "sheetCache_v1";
+const CACHE_KEY = "sheetCache_v2";
 
-// -----------------------------
-// Initial loader
-// -----------------------------
-document.getElementById("result").innerHTML = `
+const resultEl = document.getElementById("result");
+
+// Show loading
+resultEl.innerHTML = `
   <div class="loader-container">
     <div class="loader"></div>
     <div class="loader-text">Loading...</div>
@@ -22,109 +21,119 @@ document.getElementById("result").innerHTML = `
 `;
 
 // -----------------------------
-// Load sheet data (cached + online refresh)
+// Load sheet with cache + fallback
 // -----------------------------
-async function loadSheetData() {
-  const cachedData = localStorage.getItem(CACHE_KEY);
-
-  // 1️⃣ Load instantly from cache if available
-  if (cachedData) {
+async function loadSheet() {
+  const cached = localStorage.getItem(CACHE_KEY);
+  if (cached) {
     try {
-      data = JSON.parse(cachedData);
+      data = JSON.parse(cached);
       dataReady = true;
-      console.log("Loaded from cache:", data.length, "rows");
-      document.getElementById("result").innerHTML =
-        '<div style="text-align:center;color:var(--text-color,#FFD700);font-weight:500;margin-top:20px;">Ready to search items</div>';
-    } catch (err) {
-      console.warn("Cache parse error:", err);
+      showReady();
+      console.log("Loaded from cache:", data.length);
+    } catch (e) {
+      console.warn("Bad cache:", e);
+      localStorage.removeItem(CACHE_KEY);
     }
   }
 
-  // 2️⃣ Fetch new data in background
   try {
     const res = await fetch(SHEET_URL, { cache: "no-store" });
     const txt = await res.text();
-    const json = JSON.parse(txt.substr(47).slice(0, -2));
 
-    const freshData = json.table.rows.map((r) => {
-      const skuOriginal = r.c[0]?.v || "";
-      const nameOriginal = r.c[1]?.v || "";
+    // Fix for iOS blank fetches
+    if (!txt || !txt.startsWith("/*O_o*/")) throw new Error("Invalid data");
+
+    const json = JSON.parse(txt.substr(47).slice(0, -2));
+    const rows = json.table.rows || [];
+
+    const fresh = rows.map((r) => {
+      const sku = r.c[0]?.v || "";
+      const name = r.c[1]?.v || "";
       const barcodeCell = (r.c[2]?.v || "").trim();
-      const barcodeList = barcodeCell
+      const barcodes = barcodeCell
         .split(",")
         .map((b) => b.trim())
-        .filter((b) => b);
+        .filter(Boolean);
 
       return {
-        sku: skuOriginal,
-        name: nameOriginal,
-        barcodes: barcodeList,
-        primaryBarcode: barcodeList[0] || "",
-        searchSku: skuOriginal.toLowerCase(),
-        searchBarcodes: barcodeList.map((b) => b.toLowerCase()),
+        sku,
+        name,
+        barcodes,
+        primaryBarcode: barcodes[0] || "",
+        searchSku: sku.toLowerCase(),
+        searchBarcodes: barcodes.map((b) => b.toLowerCase()),
       };
     });
 
-    console.log("Fetched fresh data:", freshData.length, "rows");
-    localStorage.setItem(CACHE_KEY, JSON.stringify(freshData));
-
-    if (!dataReady) {
-      data = freshData;
+    if (fresh.length > 0) {
+      data = fresh;
+      localStorage.setItem(CACHE_KEY, JSON.stringify(fresh));
       dataReady = true;
-      document.getElementById("result").innerHTML =
-        '<div style="text-align:center;color:var(--text-color,#FFD700);font-weight:500;margin-top:20px;">Ready to search items</div>';
+      showReady();
+      console.log("Fetched fresh:", data.length);
     } else {
-      // update silently
-      data = freshData;
+      throw new Error("Empty sheet");
     }
   } catch (err) {
-    console.error("Failed to load sheet:", err);
-    if (!dataReady) {
-      loadFailed = true;
-      document.getElementById("result").innerHTML = `
-        <div style="color: var(--text-color, #FFD700); text-align:center; font-weight:500; margin-top:20px;">
-          Unable to load data.<br>Please check your internet connection.<br><br>
-          <button id="reloadBtn" style="
-            background: transparent;
-            border: 1px solid var(--text-color, #FFD700);
-            color: var(--text-color, #FFD700);
-            border-radius: 8px;
-            padding: 8px 16px;
-            font-size: 15px;
-            font-weight: 500;
-            cursor: pointer;
-          ">⟳ Reload</button>
-        </div>
-      `;
-
-      const reloadBtn = document.getElementById("reloadBtn");
-      reloadBtn.addEventListener("click", () => {
-        localStorage.removeItem(CACHE_KEY);
-        document.getElementById("result").innerHTML = `
-          <div class="loader-container">
-            <div class="loader"></div>
-            <div class="loader-text">Reloading...</div>
-          </div>`;
-        loadSheetData();
-      });
-    }
+    console.error("Load failed:", err);
+    if (!dataReady) showError();
+    loadFailed = true;
   }
 }
 
-loadSheetData();
+loadSheet();
 
 // -----------------------------
-// Live search
+// Show ready message
 // -----------------------------
-document.getElementById("searchBox").addEventListener("input", onSearchInput);
+function showReady() {
+  resultEl.innerHTML = `
+    <div style="text-align:center;color:var(--text-color,#FFD700);font-weight:500;margin-top:20px;">
+      Ready to search items
+    </div>
+  `;
+}
 
-function onSearchInput(e) {
-  if (loadFailed) return; // ignore if load failed
-  if (!dataReady) return; // wait for ready
+// -----------------------------
+// Show error message
+// -----------------------------
+function showError() {
+  resultEl.innerHTML = `
+    <div style="color:var(--text-color,#FFD700);text-align:center;font-weight:500;margin-top:20px;">
+      Unable to load data.<br>
+      Please check your internet connection and try again.<br><br>
+      <button id="reloadBtn" style="
+        background:transparent;
+        border:1px solid var(--text-color,#FFD700);
+        color:var(--text-color,#FFD700);
+        border-radius:8px;
+        padding:8px 16px;
+        font-size:15px;
+        font-weight:500;
+        cursor:pointer;
+      ">⟳ Reload</button>
+    </div>
+  `;
+  document.getElementById("reloadBtn").addEventListener("click", () => {
+    localStorage.removeItem(CACHE_KEY);
+    resultEl.innerHTML = `
+      <div class="loader-container">
+        <div class="loader"></div>
+        <div class="loader-text">Reloading...</div>
+      </div>`;
+    loadSheet();
+  });
+}
 
+// -----------------------------
+// Search logic
+// -----------------------------
+document.getElementById("searchBox").addEventListener("input", (e) => {
+  if (loadFailed || !dataReady) return;
   const q = e.target.value.trim().toLowerCase();
   if (!q) {
-    document.getElementById("result").innerHTML = "";
+    resultEl.innerHTML = "";
     return;
   }
 
@@ -135,17 +144,14 @@ function onSearchInput(e) {
   );
 
   if (results.length === 0) {
-    document.getElementById("result").innerHTML = `
+    resultEl.innerHTML = `
       <div style="
-        color: var(--text-color, #FFD700);
-        text-align: center;
-        font-weight: 500;
-        margin-top: 20px;
-        letter-spacing: 0.5px;
-        font-size: 1rem;
-      ">
-        No matching item found
-      </div>
+        color:var(--text-color,#FFD700);
+        text-align:center;
+        font-weight:500;
+        margin-top:20px;
+        font-size:1rem;
+      ">No matching item found</div>
     `;
   } else {
     const item = results[0];
@@ -154,7 +160,7 @@ function onSearchInput(e) {
         ? `${item.barcodes[0]} <span class='more'>…</span>`
         : item.barcodes[0];
 
-    document.getElementById("result").innerHTML = `
+    resultEl.innerHTML = `
       <div class="card">
         <strong>${escapeHtml(item.name)}</strong><br>
         SKU: ${escapeHtml(item.sku)}<br>
@@ -168,17 +174,16 @@ function onSearchInput(e) {
     `;
 
     const more = document.querySelector(".more");
-    if (more) {
+    if (more)
       more.addEventListener("click", () => {
         document.querySelector(".barcode-list").innerText =
           item.barcodes.join(", ");
       });
-    }
   }
-}
+});
 
 // -----------------------------
-// Helper: HTML escape
+// Escape HTML
 // -----------------------------
 function escapeHtml(s) {
   return String(s || "").replace(/[&<>"']/g, (m) => {
@@ -191,35 +196,18 @@ function escapeHtml(s) {
 }
 
 // -----------------------------
-// 🌙 Dark / Light mode toggle
+// Theme toggle
 // -----------------------------
 const themeToggle = document.getElementById("themeToggle");
 const html = document.documentElement;
-const savedTheme = localStorage.getItem("theme") || "light";
+const saved = localStorage.getItem("theme") || "light";
 
-html.setAttribute("data-theme", savedTheme);
-themeToggle.textContent = savedTheme === "light" ? "🌙" : "☀️";
+html.setAttribute("data-theme", saved);
+themeToggle.textContent = saved === "light" ? "🌙" : "☀️";
 
 themeToggle.addEventListener("click", () => {
-  const current = html.getAttribute("data-theme") || "light";
-  const next = current === "light" ? "dark" : "light";
+  const next = html.getAttribute("data-theme") === "light" ? "dark" : "light";
   html.setAttribute("data-theme", next);
   localStorage.setItem("theme", next);
   themeToggle.textContent = next === "light" ? "🌙" : "☀️";
 });
-
-// -----------------------------
-// 🔁 Easy Scan reload button
-// -----------------------------
-const easyScan = document.getElementById("easyScan");
-if (easyScan) {
-  easyScan.addEventListener("click", () => {
-    document.getElementById("result").innerHTML = `
-      <div class="loader-container">
-        <div class="loader"></div>
-        <div class="loader-text">Reloading...</div>
-      </div>`;
-    localStorage.removeItem(CACHE_KEY);
-    loadSheetData();
-  });
-}
