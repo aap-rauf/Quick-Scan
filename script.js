@@ -197,3 +197,26 @@ function escapeHtml(s) {
     );
   });
 }
+document.addEventListener("DOMContentLoaded", () => {
+  const themeToggle = document.getElementById("themeToggle");
+  const html = document.documentElement;
+
+  // Load saved theme or use system preference
+  const savedTheme = localStorage.getItem("theme");
+  const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+  const initialTheme = savedTheme || (prefersDark ? "dark" : "light");
+
+  html.setAttribute("data-theme", initialTheme);
+
+  if (themeToggle) {
+    themeToggle.textContent = initialTheme === "light" ? "🌙" : "☀️";
+
+    themeToggle.addEventListener("click", () => {
+      const current = html.getAttribute("data-theme") || "light";
+      const next = current === "light" ? "dark" : "light";
+      html.setAttribute("data-theme", next);
+      localStorage.setItem("theme", next);
+      themeToggle.textContent = next === "light" ? "🌙" : "☀️";
+    });
+  }
+});
