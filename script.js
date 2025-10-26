@@ -55,7 +55,7 @@ fetch(SHEET_URL)
         margin-top: 20px;
         letter-spacing: 0.5px;
       ">
-        Unable to load data.<br>
+        Unable to load items.<br>
         Please check your internet connection.<br><br>
         <button id="reloadBtn" style="
           background: transparent;
