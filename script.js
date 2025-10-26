@@ -1,88 +1,80 @@
-// URL to fetch your sheet as JSON
-const SHEET_URL =
-  "https://docs.google.com/spreadsheets/d/1vtZ2Xmb4eKPFs_v-D-nVNAm2_d2TtqqaMFO93TtaKxM/gviz/tq?tqx=out:json";
+// Replace with your Apps Script JSON API URL
+const API_URL = "https://script.google.com/macros/s/AKfycbyx7qq02vueGy1Qw_cxBQe0uRUKaryLGJL4ibJqTRvtHb-CYh8zGXYfJup9n15nTsaq/exec";
 
 let data = [];
 let dataReady = false;
-let loadFailed = false; // <--- added to prevent typing after load fails
 
-// show initial loader
-document.getElementById("result").innerHTML = `
-  <div class="loader-container">
-    <div class="loader"></div>
-    <div class="loader-text">Loading...</div>
-  </div>
-`;
-
-// load sheet data
-fetch(SHEET_URL)
-  .then((res) => res.text())
-  .then((txt) => {
-    const json = JSON.parse(txt.substr(47).slice(0, -2));
-    data = json.table.rows.map((r) => {
-      const skuOriginal = r.c[0]?.v || "";
-      const nameOriginal = r.c[1]?.v || "";
-      const barcodeCell = (r.c[2]?.v || "").trim();
-      const barcodeList = barcodeCell
-        .split(",")
-        .map((b) => b.trim())
-        .filter((b) => b);
-
-      return {
-        sku: skuOriginal,
-        name: nameOriginal,
-        barcodes: barcodeList,
-        primaryBarcode: barcodeList[0] || "",
-        searchSku: skuOriginal.toLowerCase(),
-        searchBarcodes: barcodeList.map((b) => b.toLowerCase()),
-      };
-    });
-
-    console.log("Loaded", data.length, "rows");
+// Load cached data first (for instant start)
+const cached = localStorage.getItem("sheetCache");
+if (cached) {
+  try {
+    data = JSON.parse(cached);
     dataReady = true;
+    console.log("Loaded from cache:", data.length, "rows");
     document.getElementById("result").innerHTML =
-      '<div style="text-align:center;color:var(--text-color,#FFD700);font-weight:500;margin-top:20px;letter-spacing:0.5px;">Ready to search items</div>';
+      '<div style="text-align:center;color:var(--text-color,#FFD700);margin-top:20px;">Ready to search items</div>';
+  } catch (e) {
+    console.warn("Cache parse error", e);
+  }
+}
+
+// Always try to refresh in background
+fetch(API_URL, { cache: "no-store" })
+  .then(res => res.json())
+  .then(json => {
+    data = json;
+    localStorage.setItem("sheetCache", JSON.stringify(json));
+    if (!dataReady) {
+      dataReady = true;
+      document.getElementById("result").innerHTML =
+        '<div style="text-align:center;color:var(--text-color,#FFD700);margin-top:20px;">Ready to search items</div>';
+    }
+    console.log("Updated from API:", data.length, "rows");
   })
-  .catch((err) => {
-    console.error("Failed to load sheet:", err);
-    loadFailed = true; // mark as failed
-
-    document.getElementById("result").innerHTML = `
-      <div style="
-        color: var(--text-color, #FFD700);
-        text-align: center;
-        font-weight: 500;
-        margin-top: 20px;
-        letter-spacing: 0.5px;
-      ">
-        Unable to load data.<br>
-        Please check your internet connection.<br><br>
-        <button id="reloadBtn" style="
-          background: transparent;
-          border: 1px solid var(--text-color, #FFD700);
-          color: var(--text-color, #FFD700);
-          border-radius: 8px;
-          padding: 8px 16px;
-          font-size: 15px;
-          font-weight: 500;
-          cursor: pointer;
-          transition: 0.3s;
-        ">⟳ Reload</button>
-      </div>
-    `;
-
-    const reloadBtn = document.getElementById("reloadBtn");
-    if (reloadBtn) {
-      reloadBtn.addEventListener("click", () => {
-        document.getElementById("result").innerHTML = `
-          <div class="loader-container">
-            <div class="loader"></div>
-            <div class="loader-text">Reloading...</div>
-          </div>`;
-        location.reload();
-      });
+  .catch(err => {
+    console.error("Failed to fetch data:", err);
+    if (!dataReady) {
+      document.getElementById("result").innerHTML = `
+        <div style="color:#FFD700;text-align:center;margin-top:20px;">
+          Unable to load data.<br>Check your internet and try again.
+        </div>`;
     }
   });
+
+// Your search function stays the same ↓
+document.getElementById("searchBox").addEventListener("input", (e) => {
+  if (!dataReady) return;
+
+  const q = e.target.value.trim().toLowerCase();
+  if (!q) {
+    document.getElementById("result").innerHTML = "";
+    return;
+  }
+
+  const results = data.filter(
+    item =>
+      (item["Barcode"] || "").toString().toLowerCase().endsWith(q) ||
+      (item["Sku"] || "").toString().toLowerCase().endsWith(q)
+  );
+
+  if (results.length === 0) {
+    document.getElementById("result").innerHTML =
+      '<div style="color:#FFD700;text-align:center;margin-top:20px;">No matching item found</div>';
+  } else {
+    const item = results[0];
+    const barcodes = (item["Barcode"] || "").toString();
+    document.getElementById("result").innerHTML = `
+      <div class="card">
+        <strong>${item["Name"] || "Unnamed"}</strong><br>
+        SKU: ${item["Sku"] || "N/A"}<br>
+        Barcode: ${barcodes}<br><br>
+        <div class="barcode-img">
+          <img src="https://barcodeapi.org/api/code128/${encodeURIComponent(barcodes)}" alt="Barcode" />
+        </div>
+      </div>
+    `;
+  }
+});
 
 // live search
 document.getElementById("searchBox").addEventListener("input", onSearchInput);
