@@ -1,6 +1,6 @@
 // URL to fetch your sheet as JSON
 const SHEET_URL =
-  "https://docs.google.com/spreadsheets/d/1vtZ2Xmb4eKPFs_v-D-nVNAm2_d2TtqqaMFO93TtaKxM/gviz/tq?tqx=out:json";
+  "https://script.google.com/macros/s/AKfycbxPpQ8aHgOwTQWi10zYdv84latlSyBG1i0ZqZM2Uwq1qyPa_DrJCPIpeMMN4ji5n8aN/exec";
 
 let data = [];
 let dataReady = false;
@@ -16,13 +16,12 @@ document.getElementById("result").innerHTML = `
 
 // load sheet data
 fetch(SHEET_URL)
-  .then((res) => res.text())
-  .then((txt) => {
-    const json = JSON.parse(txt.substr(47).slice(0, -2));
-    data = json.table.rows.map((r) => {
-      const skuOriginal = r.c[0]?.v || "";
-      const nameOriginal = r.c[1]?.v || "";
-      const barcodeCell = (r.c[2]?.v || "").trim();
+  .then((res) => res.json())
+  .then((json) => {
+    data = json.map((r) => {
+      const skuOriginal = r.sku || "";
+      const nameOriginal = r.name || "";
+      const barcodeCell = (r.barcode || "").trim();
       const barcodeList = barcodeCell
         .split(",")
         .map((b) => b.trim())
@@ -41,35 +40,31 @@ fetch(SHEET_URL)
     console.log("Loaded", data.length, "rows");
     dataReady = true;
     document.getElementById("result").innerHTML =
-      '<div style="text-align:center;color:var(--text-color,#FFD700);font-weight:500;margin-top:20px;letter-spacing:0.5px;">Ready to search items</div>';
+      '<div style="text-align:center;color:var(--text-color,#FFD700);font-weight:500;margin-top:20px;">Ready to search items</div>';
   })
   .catch((err) => {
     console.error("Failed to load sheet:", err);
-    loadFailed = true; // mark as failed
-
+    loadFailed = true;
     document.getElementById("result").innerHTML = `
-      <div style="
-        color: var(--text-color, #FFD700);
-        text-align: center;
-        font-weight: 500;
-        margin-top: 20px;
-        letter-spacing: 0.5px;
-      ">
-        Unable to load items.<br>
+      <div style="color:var(--text-color,#FFD700);text-align:center;font-weight:500;margin-top:20px;">
+        Unable to load data.<br>
         Please check your internet connection.<br><br>
         <button id="reloadBtn" style="
           background: transparent;
-          border: 1px solid var(--text-color, #FFD700);
-          color: var(--text-color, #FFD700);
+          border: 1px solid var(--text-color,#FFD700);
+          color: var(--text-color,#FFD700);
           border-radius: 8px;
           padding: 8px 16px;
           font-size: 15px;
           font-weight: 500;
           cursor: pointer;
-          transition: 0.3s;
         ">⟳ Reload</button>
       </div>
     `;
+    document.getElementById("reloadBtn").addEventListener("click", () => {
+      location.reload();
+    });
+  });
 
     const reloadBtn = document.getElementById("reloadBtn");
     if (reloadBtn) {
