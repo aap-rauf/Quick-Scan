@@ -1,5 +1,5 @@
 // Replace with your Apps Script JSON API URL
-const API_URL = "https://script.google.com/macros/s/AKfycby2no1i8kWA1FEIWch5cQsJMV6NFd2_LIjxbELj9x7WB1di86Mp93G386Qk2a50-Ezo/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbxPpQ8aHgOwTQWi10zYdv84latlSyBG1i0ZqZM2Uwq1qyPa_DrJCPIpeMMN4ji5n8aN/exec";
 
 let data = [];
 let dataReady = false;
