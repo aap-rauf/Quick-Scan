@@ -1,118 +1,108 @@
-// Replace with your Apps Script JSON API URL
-const API_URL =
-  "https://script.google.com/macros/s/AKfycbxPpQ8aHgOwTQWi10zYdv84latlSyBG1i0ZqZM2Uwq1qyPa_DrJCPIpeMMN4ji5n8aN/exec";
+// ✅ Replace with your Apps Script API URL
+const API_URL = "https://script.google.com/macros/s/AKfycbxPpQ8aHgOwTQWi10zYdv84latlSyBG1i0ZqZM2Uwq1qyPa_DrJCPIpeMMN4ji5n8aN/exec";
 
 let data = [];
 let dataReady = false;
-let loadFailed = false;
 
-// Load cached data first (for instant start)
+// ✅ Show initial loader
+document.getElementById("result").innerHTML = `
+  <div class="loader-container">
+    <div class="loader"></div>
+    <div class="loader-text">Loading...</div>
+  </div>
+`;
+
+// ✅ Load cached data first for instant use
 const cached = localStorage.getItem("sheetCache");
 if (cached) {
   try {
     data = JSON.parse(cached);
     dataReady = true;
     console.log("Loaded from cache:", data.length, "rows");
-    document.getElementById("result").innerHTML =
-      '<div style="text-align:center;color:var(--text-color,#FFD700);margin-top:20px;">Ready to search items</div>';
+    document.getElementById("result").innerHTML = `
+      <div style="text-align:center;color:var(--text-color,#FFD700);margin-top:20px;">
+        Ready to search items
+      </div>
+    `;
   } catch (e) {
     console.warn("Cache parse error", e);
   }
 }
 
-// Always try to refresh in background
+// ✅ Fetch fresh data in background
 fetch(API_URL, { cache: "no-store" })
-  .then((res) => res.json())
-  .then((json) => {
-    data = json;
-    localStorage.setItem("sheetCache", JSON.stringify(json));
-    if (!dataReady) {
-      dataReady = true;
-      document.getElementById("result").innerHTML =
-        '<div style="text-align:center;color:var(--text-color,#FFD700);margin-top:20px;">Ready to search items</div>';
+  .then(res => res.json())
+  .then(json => {
+    if (Array.isArray(json)) {
+      data = json;
+      localStorage.setItem("sheetCache", JSON.stringify(json));
+      console.log("Updated from API:", data.length, "rows");
+      if (!dataReady) {
+        dataReady = true;
+        document.getElementById("result").innerHTML = `
+          <div style="text-align:center;color:var(--text-color,#FFD700);margin-top:20px;">
+            Ready to search items
+          </div>
+        `;
+      }
+    } else {
+      throw new Error("Invalid API response");
     }
-    console.log("Updated from API:", data.length, "rows");
   })
-  .catch((err) => {
+  .catch(err => {
     console.error("Failed to fetch data:", err);
-    loadFailed = true;
     if (!dataReady) {
       document.getElementById("result").innerHTML = `
         <div style="color:#FFD700;text-align:center;margin-top:20px;">
-          Unable to load data.<br>Check your internet connection.<br><br>
-          <button id="reloadBtn" style="
-            background: transparent;
-            border: 1px solid #FFD700;
-            color: #FFD700;
-            border-radius: 8px;
-            padding: 8px 16px;
-            font-size: 15px;
-            font-weight: 500;
-            cursor: pointer;
-          ">⟳ Reload</button>
-        </div>`;
-      document.getElementById("reloadBtn").addEventListener("click", () =>
-        location.reload()
-      );
+          Unable to load data.<br>Check your internet connection and try again.
+        </div>
+      `;
     }
   });
 
-// --- Search logic ---
-document.getElementById("searchBox").addEventListener("input", (e) => {
-  if (loadFailed || !dataReady) return;
-
+// ✅ Live search
+document.getElementById("searchBox").addEventListener("input", e => {
+  if (!dataReady) return;
   const q = e.target.value.trim().toLowerCase();
-  const resultDiv = document.getElementById("result");
-
   if (!q) {
-    resultDiv.innerHTML = "";
+    document.getElementById("result").innerHTML = "";
     return;
   }
 
-  const results = data.filter(
-    (item) =>
-      (item.Sku || "").toString().toLowerCase().endsWith(q) ||
-      (item.Barcode || "").toString().toLowerCase().includes(q)
+  const results = data.filter(item =>
+    item.barcode?.toString().toLowerCase().endsWith(q) ||
+    item.sku?.toString().toLowerCase().endsWith(q)
   );
 
   if (results.length === 0) {
-    resultDiv.innerHTML = `
+    document.getElementById("result").innerHTML = `
       <div style="color:#FFD700;text-align:center;margin-top:20px;">
         No matching item found
-      </div>`;
+      </div>
+    `;
   } else {
     const item = results[0];
-    const name = item.Name || "Unnamed";
-    const sku = item.Sku || "N/A";
-    const barcodeList = (item.Barcode || "").split(",").map((b) => b.trim());
-    const primaryBarcode = barcodeList[0] || "";
-
-    resultDiv.innerHTML = `
+    document.getElementById("result").innerHTML = `
       <div class="card">
-        <strong>${escapeHtml(name)}</strong><br>
-        SKU: ${escapeHtml(sku)}<br>
-        Barcode: ${escapeHtml(barcodeList.join(", "))}<br><br>
+        <strong>${escapeHtml(item.name || "Unnamed")}</strong><br>
+        SKU: ${escapeHtml(item.sku || "N/A")}<br>
+        Barcode: ${escapeHtml(item.barcode || "N/A")}<br><br>
         <div class="barcode-img">
-          <img src="https://barcodeapi.org/api/code128/${encodeURIComponent(
-            primaryBarcode
-          )}" alt="Barcode" />
+          <img src="https://barcodeapi.org/api/code128/${encodeURIComponent(item.barcode)}" alt="Barcode" />
         </div>
-      </div>`;
+      </div>
+    `;
   }
 });
 
-// --- Helper for escaping HTML ---
+// ✅ Escape HTML helper
 function escapeHtml(s) {
-  return String(s || "").replace(/[&<>"']/g, (m) => {
-    return (
-      { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[
-        m
-      ] || m
-    );
-  });
+  return String(s || "").replace(/[&<>"']/g, m => (
+    { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m] || m
+  ));
 }
 
-// --- Dark / Light theme toggle with memory ---
+// ✅ Dark / Light theme toggle
 const themeToggle = document.getElementById("themeToggle");
 const html = document.documentElement;
 const savedTheme = localStorage.getItem("theme") || "light";
