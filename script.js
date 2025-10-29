@@ -8,9 +8,9 @@ let loadFailed = false; // <--- added to prevent typing after load fails
 
 // show initial loader
 document.getElementById("result").innerHTML = `
-  <div class="loader-container">
-    <div class="loader"></div>
-    <div class="loader-text">Loading...</div>
+  <div class="loader-bar-container">
+    <div class="loader-bar"></div>
+    <div class="loader-text">Loading data...</div>
   </div>
 `;
 
