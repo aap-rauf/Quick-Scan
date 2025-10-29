@@ -172,14 +172,35 @@ html[data-theme="dark"] #result {
   margin-top: 50px;
 }
 
+/* GOLD LOADING BAR */
 .loader {
-  border: 5px solid rgba(255, 255, 255, 0.2);
-  border-top: 5px solid #FFD700;
-  border-radius: 50%;
-  width: 45px;
-  height: 45px;
+  width: 80%;
+  max-width: 400px;
+  height: 10px;
   margin: 0 auto 12px;
-  animation: spin 1s linear infinite;
+  border: 1px solid #FFD700;
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+  background: transparent;
+}
+
+.loader::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 0%;
+  background: #FFD700;
+  animation: loadBar 2s linear infinite;
+  border-radius: 6px;
+}
+
+@keyframes loadBar {
+  0% { width: 0%; }
+  50% { width: 100%; }
+  100% { width: 0%; }
 }
 
 .loader-text {
