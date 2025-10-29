@@ -9,11 +9,10 @@ let loadFailed = false; // <--- added to prevent typing after load fails
 // show initial loader
 document.getElementById("result").innerHTML = `
   <div class="loader-container">
-    <div class="loader"></div>
+    <div class="loader-bar"></div>
     <div class="loader-text">Loading...</div>
   </div>
 `;
-
 // load sheet data
 fetch(SHEET_URL)
   .then((res) => res.text())
