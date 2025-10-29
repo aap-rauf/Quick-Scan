@@ -2,11 +2,6 @@
 const SHEET_URL =
   "https://docs.google.com/spreadsheets/d/1vtZ2Xmb4eKPFs_v-D-nVNAm2_d2TtqqaMFO93TtaKxM/gviz/tq?tqx=out:json";
 
-let data = [];
-let dataReady = false;
-let loadFailed = false; // <--- added to prevent typing after load fails
-
-// show initial loader
 // show initial loader (progress bar)
 document.getElementById("result").innerHTML = `
   <div class="loader-bar-container" style="width:90%;max-width:480px;margin:70px auto 20px;">
