@@ -7,12 +7,29 @@ let dataReady = false;
 let loadFailed = false; // <--- added to prevent typing after load fails
 
 // show initial loader
+// show progressive loader
 document.getElementById("result").innerHTML = `
   <div class="loader-container">
-    <div class="loader-bar"></div>
-    <div class="loader-text">Loading...</div>
+    <div class="loader-bar">
+      <div class="loader-progress"></div>
+    </div>
+    <div class="loader-text" id="loaderText">Loading... 0%</div>
   </div>
 `;
+
+let progress = 0;
+const loaderProgress = document.querySelector(".loader-progress");
+const loaderText = document.getElementById("loaderText");
+
+// simulate smooth progress
+const progressInterval = setInterval(() => {
+  if (progress < 90) { // stop at 90% until real data loads
+    progress += Math.random() * 8; 
+    if (progress > 90) progress = 90;
+    loaderProgress.style.width = progress + "%";
+    loaderText.textContent = `Loading... ${Math.floor(progress)}%`;
+  }
+}, 300);
 // load sheet data
 fetch(SHEET_URL)
   .then((res) => res.text())
@@ -44,6 +61,14 @@ fetch(SHEET_URL)
   })
   .catch((err) => {
     console.error("Failed to load sheet:", err);
+    // finish the loading bar
+clearInterval(progressInterval);
+loaderProgress.style.width = "100%";
+loaderText.textContent = "Loading... 100%";
+setTimeout(() => {
+  document.getElementById("result").innerHTML =
+    '<div style="text-align:center;color:var(--color-accent);font-weight:500;margin-top:20px;letter-spacing:0.5px;">Ready to search items</div>';
+}, 500);
     loadFailed = true; // mark as failed
 
     document.getElementById("result").innerHTML = `
