@@ -6,85 +6,69 @@ let data = [];
 let dataReady = false;
 let loadFailed = false; // <--- added to prevent typing after load fails
 
-// show initial loader
-// show progressive loader
+// Gold loading bar
 document.getElementById("result").innerHTML = `
   <div class="loader-container">
-    <div class="loader-bar">
-      <div class="loader-progress"></div>
+    <div class="loader-text">LOADING...</div>
+    <div class="loader-bar-outline">
+      <div class="loader-bar-fill"></div>
     </div>
-    <div class="loader-text" id="loaderText">Loading... 0%</div>
   </div>
 `;
 
 let progress = 0;
-const loaderProgress = document.querySelector(".loader-progress");
-const loaderText = document.getElementById("loaderText");
-
-// simulate smooth progress
-const progressInterval = setInterval(() => {
-  if (progress < 90) { // stop at 90% until real data loads
-    progress += Math.random() * 8; 
-    if (progress > 90) progress = 90;
-    loaderProgress.style.width = progress + "%";
-    loaderText.textContent = `Loading... ${Math.floor(progress)}%`;
+const fill = document.querySelector(".loader-bar-fill");
+const interval = setInterval(() => {
+  if (progress < 95) {
+    progress += Math.random() * 5;
+    fill.style.width = progress + "%";
   }
-}, 300);
-// load sheet data
+}, 200);
+
+// Load Google Sheet
 fetch(SHEET_URL)
   .then((res) => res.text())
   .then((txt) => {
-    const json = JSON.parse(txt.substr(47).slice(0, -2));
-    data = json.table.rows.map((r) => {
-      const skuOriginal = r.c[0]?.v || "";
-      const nameOriginal = r.c[1]?.v || "";
-      const barcodeCell = (r.c[2]?.v || "").trim();
-      const barcodeList = barcodeCell
-        .split(",")
-        .map((b) => b.trim())
-        .filter((b) => b);
+    clearInterval(interval);
+    fill.style.width = "100%";
 
-      return {
-        sku: skuOriginal,
-        name: nameOriginal,
-        barcodes: barcodeList,
-        primaryBarcode: barcodeList[0] || "",
-        searchSku: skuOriginal.toLowerCase(),
-        searchBarcodes: barcodeList.map((b) => b.toLowerCase()),
-      };
-    });
+    // Wait a moment to show the full bar
+    setTimeout(() => {
+      const json = JSON.parse(txt.substr(47).slice(0, -2));
+      data = json.table.rows.map((r) => {
+        const skuOriginal = r.c[0]?.v || "";
+        const nameOriginal = r.c[1]?.v || "";
+        const barcodeCell = (r.c[2]?.v || "").trim();
+        const barcodeList = barcodeCell
+          .split(",")
+          .map((b) => b.trim())
+          .filter((b) => b);
+        return {
+          sku: skuOriginal,
+          name: nameOriginal,
+          barcodes: barcodeList,
+          primaryBarcode: barcodeList[0] || "",
+          searchSku: skuOriginal.toLowerCase(),
+          searchBarcodes: barcodeList.map((b) => b.toLowerCase()),
+        };
+      });
 
-    console.log("Loaded", data.length, "rows");
-    dataReady = true;
-    document.getElementById("result").innerHTML =
-      '<div style="text-align:center;color:var(--text-color,#FFD700);font-weight:500;margin-top:20px;letter-spacing:0.5px;">Ready to search items</div>';
+      dataReady = true;
+      document.getElementById("result").innerHTML =
+        '<div style="text-align:center;color:#FFD700;font-weight:500;margin-top:20px;">Ready to search items</div>';
+    }, 400);
   })
   .catch((err) => {
+    clearInterval(interval);
     console.error("Failed to load sheet:", err);
-    // finish the loading bar
-clearInterval(progressInterval);
-loaderProgress.style.width = "100%";
-loaderText.textContent = "Loading... 100%";
-setTimeout(() => {
-  document.getElementById("result").innerHTML =
-    '<div style="text-align:center;color:var(--color-accent);font-weight:500;margin-top:20px;letter-spacing:0.5px;">Ready to search items</div>';
-}, 500);
-    loadFailed = true; // mark as failed
-
     document.getElementById("result").innerHTML = `
-      <div style="
-        color: var(--text-color, #FFD700);
-        text-align: center;
-        font-weight: 500;
-        margin-top: 20px;
-        letter-spacing: 0.5px;
-      ">
+      <div style="color:#FFD700;text-align:center;font-weight:500;margin-top:20px;">
         Unable to load data.<br>
         Please check your internet connection.<br><br>
         <button id="reloadBtn" style="
           background: transparent;
-          border: 1px solid var(--text-color, #FFD700);
-          color: var(--text-color, #FFD700);
+          border: 1px solid #FFD700;
+          color: #FFD700;
           border-radius: 8px;
           padding: 8px 16px;
           font-size: 15px;
@@ -94,17 +78,9 @@ setTimeout(() => {
         ">⟳ Reload</button>
       </div>
     `;
-
     const reloadBtn = document.getElementById("reloadBtn");
-    if (reloadBtn) {
-      reloadBtn.addEventListener("click", () => {
-        document.getElementById("result").innerHTML = `
-          <div class="loader-container">
-            <div class="loader"></div>
-            <div class="loader-text">Reloading...</div>
-          </div>`;
-        location.reload();
-      });
+    if (reloadBtn) reloadBtn.addEventListener("click", () => location.reload());
+  });
     }
   });
 
