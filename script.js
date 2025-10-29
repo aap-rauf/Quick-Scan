@@ -7,10 +7,19 @@ let dataReady = false;
 let loadFailed = false; // <--- added to prevent typing after load fails
 
 // show initial loader
+// show initial loader (progress bar)
 document.getElementById("result").innerHTML = `
-  <div class="loader-bar-container">
-    <div class="loader-bar"></div>
-    <div class="loader-text">Loading data...</div>
+  <div class="loader-bar-container" style="width:90%;max-width:480px;margin:70px auto 20px;">
+    <div id="loaderFill" style="
+      width:0%;
+      height:14px;
+      background: linear-gradient(90deg,var(--color-accent,#FFD700), #ffb84d);
+      border-radius:12px;
+      transition: width 0.2s linear;
+    "></div>
+  </div>
+  <div id="loaderText" style="text-align:center;color:var(--color-accent,#FFD700);margin-top:12px;font-weight:600;">
+    Loading... 0%
   </div>
 `;
 
