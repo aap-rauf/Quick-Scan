@@ -39,6 +39,12 @@ fetch(SHEET_URL)
     });
 
     console.log("Loaded", data.length, "rows");
+    // Stop loader animation and show full progress
+const bar = document.querySelector(".loader-bar");
+if (bar) {
+  bar.style.transition = "width 0.4s ease-in-out";
+  bar.style.width = "100%";
+}
     dataReady = true;
     document.getElementById("result").innerHTML =
       '<div style="text-align:center;color:var(--text-color,#FFD700);font-weight:500;margin-top:20px;letter-spacing:0.5px;">Ready to search items</div>';
