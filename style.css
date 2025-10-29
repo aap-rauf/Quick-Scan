@@ -172,14 +172,14 @@ html[data-theme="dark"] #result {
   margin-top: 50px;
 }
 
-/* GOLD LOADING BAR */
+/* GOLD LOADING BAR — BIGGER VERSION */
 .loader {
-  width: 80%;
-  max-width: 400px;
-  height: 10px;
-  margin: 0 auto 12px;
-  border: 1px solid #FFD700;
-  border-radius: 6px;
+  width: 90%;              /* make it wider */
+  max-width: 450px;        /* increase max width */
+  height: 16px;            /* make the bar thicker */
+  margin: 0 auto 15px;
+  border: 2px solid #FFD700;
+  border-radius: 10px;
   overflow: hidden;
   position: relative;
   background: transparent;
@@ -194,7 +194,7 @@ html[data-theme="dark"] #result {
   width: 0%;
   background: #FFD700;
   animation: loadBar 2s linear infinite;
-  border-radius: 6px;
+  border-radius: 10px;
 }
 
 @keyframes loadBar {
@@ -202,7 +202,6 @@ html[data-theme="dark"] #result {
   50% { width: 100%; }
   100% { width: 0%; }
 }
-
 .loader-text {
   color: #FFD700; /* Always yellow */
   font-size: 18px;
