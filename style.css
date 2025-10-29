@@ -224,3 +224,35 @@ html[data-theme="dark"] #result {
   from { opacity: 0; }
   to { opacity: 0.8; }
 }
+.loader-bar-container {
+  width: 80%;
+  max-width: 400px;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  margin: 100px auto 20px;
+  overflow: hidden;
+  position: relative;
+}
+
+.loader-bar {
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg, #00c6ff, #0072ff);
+  border-radius: 4px;
+  animation: loadingBar 2s linear infinite;
+}
+
+@keyframes loadingBar {
+  0% { width: 0%; }
+  50% { width: 100%; }
+  100% { width: 0%; }
+}
+
+.loader-text {
+  text-align: center;
+  color: var(--text-color, #FFD700);
+  font-weight: 500;
+  margin-top: 15px;
+  letter-spacing: 0.5px;
+}
