@@ -21,12 +21,14 @@
       <button id="themeToggle" aria-label="Toggle theme">🌙</button>
     </div>
   </header>
-
-  <main>
-    <div id="loading" class="loading" style="display: none;">
-  <div class="loading-spinner"></div>
-  <p class="loading-text">Loading...</p>
+<!-- Fancy Gold Loading Bar -->
+<div id="loadingScreen">
+  <div id="progressBarContainer">
+    <div id="progressBar"></div>
+    <div id="progressText">Loading... 0%</div>
+  </div>
 </div>
+  <main>
     <input
       type="text"
       id="searchBox"
