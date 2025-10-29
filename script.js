@@ -94,7 +94,7 @@ if (bar) {
             <div class="loader"></div>
             <div class="loader-text">Reloading...</div>
           </div>`;
-        location.reload();
+        location.reload gb();
       });
     }
   });
