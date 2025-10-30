@@ -209,13 +209,17 @@ html[data-theme="dark"] #result {
   100% { background-position: 40px 0; }
 }
 
+/* Prevent loading text jump during updates */
 .loader-bar-text {
+  display: inline-block;
+  width: 140px; /* fixed width to stop resizing */
   text-align: center;
   color: var(--color-accent, #FFD700);
   font-weight: 600;
   margin-top: 14px;
   letter-spacing: 0.3px;
   font-size: 1rem;
+  text-shadow: 0 0 6px rgba(255,215,0,0.3);
 }
 
 #signature {
