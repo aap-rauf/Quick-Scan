@@ -166,28 +166,26 @@ html[data-theme="dark"] #result {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
-/* ===== Replace old circular loader with this striped progress bar ===== */
-:root {
-  --loader-width: 88%;       /* width of the bar container */
-  --loader-max-width: 560px; /* max width for large screens */
-  --loader-height: 14px;     /* height of the bar */
-  --loader-radius: 12px;
+/* ===== FIXED: centered striped gold loader bar ===== */
+.loader-bar-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 180px; /* keeps bar + text centered nicely */
 }
 
-/* container for the loader bar that is inserted into #result */
 .loader-bar-container {
-  width: var(--loader-width);
-  max-width: var(--loader-max-width);
-  height: var(--loader-height);
-  background: rgba(255,255,255,0.06);
-  border-radius: var(--loader-radius);
-  margin: 72px auto 12px;
+  width: 88%;
+  max-width: 560px;
+  height: 16px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 12px;
   overflow: hidden;
   position: relative;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
 
-/* the fill element growth is controlled by JS (width: 0% → 100%) */
 .loader-bar-fill {
   width: 0%;
   height: 100%;
@@ -197,39 +195,27 @@ html[data-theme="dark"] #result {
     rgba(255,204,0,0.9) 40%,
     rgba(255,189,0,0.9) 100%
   );
-  border-radius: var(--loader-radius);
-  background-size: 40px 14px; /* for stripes animation */
-  /* diagonal stripe effect */
+  background-size: 40px 14px;
   background-image:
-    linear-gradient(45deg, rgba(255,255,255,0.08) 25%, transparent 25%,
-      transparent 50%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.08) 75%, transparent 75%, transparent);
+    linear-gradient(45deg, rgba(255,255,255,0.1) 25%, transparent 25%,
+    transparent 50%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.1) 75%, transparent 75%, transparent);
   animation: stripeMove 1.2s linear infinite;
-  transition: width 320ms ease;
+  border-radius: 12px;
+  transition: width 0.3s ease;
 }
 
-/* small text under the bar */
+@keyframes stripeMove {
+  0% { background-position: 0 0; }
+  100% { background-position: 40px 0; }
+}
+
 .loader-bar-text {
   text-align: center;
-  margin-top: 10px;
   color: var(--color-accent, #FFD700);
   font-weight: 600;
-  letter-spacing: 0.2px;
-}
-
-/* stripes animation */
-@keyframes stripeMove {
-  0% { background-position: 0 0, 0 0; }
-  100% { background-position: 40px 0, 0 0; }
-}
-
-/* When finished, make text a ready message */
-.loader-ready {
-  color: var(--color-accent, #FFD700);
-}
-
-/* small responsive tweak */
-@media (min-width: 1024px) {
-  :root { --loader-height: 18px; --loader-width: 60%; }
+  margin-top: 14px;
+  letter-spacing: 0.3px;
+  font-size: 1rem;
 }
 
 #signature {
