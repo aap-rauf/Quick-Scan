@@ -166,53 +166,71 @@ html[data-theme="dark"] #result {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
-/* Loader animation */
-.loader-container {
-  text-align: center;
-  margin-top: 50px;
+/* ===== Replace old circular loader with this striped progress bar ===== */
+:root {
+  --loader-width: 88%;       /* width of the bar container */
+  --loader-max-width: 560px; /* max width for large screens */
+  --loader-height: 14px;     /* height of the bar */
+  --loader-radius: 12px;
 }
 
-/* GOLD LOADING BAR — EXTRA WIDE VERSION */
-.loader {
-  width: 95%;              /* even wider, almost full width */
-  max-width: 600px;        /* big bar limit */
-  height: 20px;            /* thicker bar */
-  margin: 40px auto 15px;
-  border: 2px solid #FFD700;
-  border-radius: 12px;
+/* container for the loader bar that is inserted into #result */
+.loader-bar-container {
+  width: var(--loader-width);
+  max-width: var(--loader-max-width);
+  height: var(--loader-height);
+  background: rgba(255,255,255,0.06);
+  border-radius: var(--loader-radius);
+  margin: 72px auto 12px;
   overflow: hidden;
   position: relative;
-  background: transparent;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
 }
 
-.loader::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 0;
-  height: 100%;
+/* the fill element growth is controlled by JS (width: 0% → 100%) */
+.loader-bar-fill {
   width: 0%;
-  background: #FFD700;
-  animation: loadBar 1.8s linear infinite;
-  border-radius: 12px;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    rgba(255,215,0,0.95) 0%,
+    rgba(255,204,0,0.9) 40%,
+    rgba(255,189,0,0.9) 100%
+  );
+  border-radius: var(--loader-radius);
+  background-size: 40px 14px; /* for stripes animation */
+  /* diagonal stripe effect */
+  background-image:
+    linear-gradient(45deg, rgba(255,255,255,0.08) 25%, transparent 25%,
+      transparent 50%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.08) 75%, transparent 75%, transparent);
+  animation: stripeMove 1.2s linear infinite;
+  transition: width 320ms ease;
 }
 
-@keyframes loadBar {
-  0% { width: 0%; }
-  50% { width: 100%; }
-  100% { width: 0%; }
-}
-.loader-text {
-  color: #FFD700; /* Always yellow */
-  font-size: 18px;
+/* small text under the bar */
+.loader-bar-text {
+  text-align: center;
+  margin-top: 10px;
+  color: var(--color-accent, #FFD700);
   font-weight: 600;
+  letter-spacing: 0.2px;
 }
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+/* stripes animation */
+@keyframes stripeMove {
+  0% { background-position: 0 0, 0 0; }
+  100% { background-position: 40px 0, 0 0; }
 }
-@import url('https://fonts.googleapis.com/css2?family=Pacifico&display=swap');
+
+/* When finished, make text a ready message */
+.loader-ready {
+  color: var(--color-accent, #FFD700);
+}
+
+/* small responsive tweak */
+@media (min-width: 1024px) {
+  :root { --loader-height: 18px; --loader-width: 60%; }
+}
 
 #signature {
   position: fixed;
