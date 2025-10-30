@@ -11,15 +11,16 @@ let dataReady = false;
 let loadFailed = false;
 let fakeProgressTimer = null;
 
-// create and show the progress bar UI inside #result
 function showProgressUI() {
   const result = document.getElementById("result");
   if (!result) return;
   result.innerHTML = `
-    <div class="loader-bar-container">
-      <div id="loaderFill" class="loader-bar-fill"></div>
+    <div class="loader-bar-wrapper">
+      <div class="loader-bar-container">
+        <div id="loaderFill" class="loader-bar-fill"></div>
+      </div>
+      <div id="loaderText" class="loader-bar-text">Loading... 0%</div>
     </div>
-    <div id="loaderText" class="loader-bar-text">Loading... 0%</div>
   `;
 }
 
