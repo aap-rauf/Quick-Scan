@@ -11,19 +11,18 @@ let dataReady = false;
 let loadFailed = false;
 let fakeProgressTimer = null;
 
-function showProgressUI() {
-  const result = document.getElementById("result");
-  if (!result) return;
-  result.innerHTML = `
-    <div class="loader-bar-wrapper">
-      <div class="loader-bar-container">
-        <div id="loaderFill" class="loader-bar-fill"></div>
-      </div>
-      <div id="loaderText" class="loader-bar-text">Loading... 0%</div>
-    </div>
-  `;
-}
+function updateProgressBar(percent) {
+  const fill = document.getElementById("loaderFill");
+  const text = document.getElementById("loaderText");
 
+  if (fill) {
+    fill.style.width = percent + "%";
+  }
+  if (text) {
+    // Keep text width fixed to prevent layout jump
+    text.textContent = `Loading... ${percent}%`;
+  }
+}
 // update visible progress (0..100)
 function setProgress(pct) {
   const fill = document.getElementById("loaderFill");
