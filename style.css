@@ -252,3 +252,56 @@ html[data-theme="dark"] #result {
   from { opacity: 0; }
   to { opacity: 0.8; }
 }
+/* Loader bar container */
+.loader-bar-container {
+  width: 90%;
+  max-width: 420px;
+  margin: 100px auto 0;
+  text-align: center;
+}
+
+/* Background track */
+.loader-bar-bg {
+  width: 100%;
+  height: 18px;
+  background: rgba(255, 215, 0, 0.15);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.2) inset;
+}
+
+/* Gold striped fill */
+.loader-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: repeating-linear-gradient(
+    45deg,
+    #ffd700,
+    #ffd700 10px,
+    #ffb400 10px,
+    #ffb400 20px
+  );
+  border-radius: 12px;
+  animation: stripeMove 1s linear infinite;
+  transition: width 0.3s ease-in-out;
+}
+
+/* Moving stripes animation */
+@keyframes stripeMove {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 40px 0;
+  }
+}
+
+/* Text below bar */
+.loader-bar-text {
+  display: block;
+  margin-top: 12px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  color: var(--color-accent, #ffd700);
+  text-shadow: 0 0 6px rgba(255, 215, 0, 0.3);
+}
