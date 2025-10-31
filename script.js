@@ -1,6 +1,4 @@
-// URL to fetch your sheet as JSON
-const SHEET_URL =
-  "https://docs.google.com/spreadsheets/d/1vtZ2Xmb4eKPFs_v-D-nVNAm2_d2TtqqaMFO93TtaKxM/gviz/tq?tqx=out:json&tq=select%20A,B,C";
+const SHEET_URL = "data.json"; // ✅ local file
 let data = [];
 let dataReady = false;
 let loadFailed = false; // <--- added to prevent typing after load fails
@@ -28,15 +26,15 @@ const progressInterval = setInterval(() => {
   }
 }, 150);
 
-// load sheet data
 fetch(SHEET_URL)
-  .then((res) => res.text())
-  .then((txt) => {
-    const json = JSON.parse(txt.substr(47).slice(0, -2));
-    data = json.table.rows.map((r) => {
-      const skuOriginal = r.c[0]?.v || "";
-      const nameOriginal = r.c[1]?.v || "";
-      const barcodeCell = (r.c[2]?.v || "").trim();
+  .then((res) => res.json())
+  .then((json) => {
+    // assuming data.json is an array like:
+    // [{"sku":"123","name":"Item","barcode":"999"}]
+    data = json.map((r) => {
+      const skuOriginal = r.sku || "";
+      const nameOriginal = r.name || "";
+      const barcodeCell = (r.barcode || "").trim();
       const barcodeList = barcodeCell
         .split(",")
         .map((b) => b.trim())
@@ -51,6 +49,20 @@ fetch(SHEET_URL)
         searchBarcodes: barcodeList.map((b) => b.toLowerCase()),
       };
     });
+
+    // ✅ mark complete
+    console.log("Loaded", data.length, "rows");
+    dataReady = true;
+    clearInterval(progressInterval);
+    loaderFill.style.width = "100%";
+    loaderText.textContent = "Loading... 100%";
+
+    // show message after a short pause
+    setTimeout(() => {
+      document.getElementById("result").innerHTML =
+        '<div style="text-align:center;color:var(--text-color,#FFD700);font-weight:500;margin-top:20px;letter-spacing:0.5px;">Ready to search items</div>';
+    }, 400);
+  })
 
     console.log("Loaded", data.length, "rows");
     dataReady = true;
