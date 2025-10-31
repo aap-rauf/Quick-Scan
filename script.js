@@ -1,10 +1,7 @@
-const SHEET_URLS = ["data_part_1.json", "data_part_2.json", "data_part_3.json", "data_part_4.json"];
+// URL to fetch your sheet as JSON
+const SHEET_URL =
+  "https://docs.google.com/spreadsheets/d/1vtZ2Xmb4eKPFs_v-D-nVNAm2_d2TtqqaMFO93TtaKxM/gviz/tq?tqx=out:json";
 
-Promise.all(SHEET_URLS.map(url => fetch(url).then(r => r.json())))
-  .then(parts => {
-    data = parts.flat(); // combine all parts
-    console.log("Loaded", data.length, "rows");
-  });
 let data = [];
 let dataReady = false;
 let loadFailed = false; // <--- added to prevent typing after load fails
@@ -32,25 +29,19 @@ const progressInterval = setInterval(() => {
   }
 }, 150);
 
-const SHEET_URLS = [
-  "data_part_1.json",
-  "data_part_2.json",
-  "data_part_3.json",
-  "data_part_4.json"
-];
-
-Promise.all(SHEET_URLS.map(url => fetch(url).then(r => r.json())))
-  .then(parts => {
-    const combined = parts.flat();
-
-    data = combined.map(r => {
-      const skuOriginal = r.sku || "";
-      const nameOriginal = r.name || "";
-      const barcodeCell = (r.barcode || "").trim();
+// load sheet data
+fetch(SHEET_URL)
+  .then((res) => res.text())
+  .then((txt) => {
+    const json = JSON.parse(txt.substr(47).slice(0, -2));
+    data = json.table.rows.map((r) => {
+      const skuOriginal = r.c[0]?.v || "";
+      const nameOriginal = r.c[1]?.v || "";
+      const barcodeCell = (r.c[2]?.v || "").trim();
       const barcodeList = barcodeCell
         .split(",")
-        .map(b => b.trim())
-        .filter(b => b);
+        .map((b) => b.trim())
+        .filter((b) => b);
 
       return {
         sku: skuOriginal,
@@ -58,27 +49,31 @@ Promise.all(SHEET_URLS.map(url => fetch(url).then(r => r.json())))
         barcodes: barcodeList,
         primaryBarcode: barcodeList[0] || "",
         searchSku: skuOriginal.toLowerCase(),
-        searchBarcodes: barcodeList.map(b => b.toLowerCase())
+        searchBarcodes: barcodeList.map((b) => b.toLowerCase()),
       };
     });
 
     console.log("Loaded", data.length, "rows");
     dataReady = true;
     clearInterval(progressInterval);
-    loaderFill.style.width = "100%";
-    loaderText.textContent = "Loading... 100%";
+loaderFill.style.width = "100%";
+loaderText.textContent = "Loading... 100%";
 
-    setTimeout(() => {
-      document.getElementById("result").innerHTML =
-        '<div style="text-align:center;color:var(--text-color,#FFD700);font-weight:500;margin-top:20px;letter-spacing:0.5px;">Ready to search items</div>';
-    }, 400);
+setTimeout(() => {
+  document.getElementById("result").innerHTML =
+    '<div style="text-align:center;color:var(--text-color,#FFD700);font-weight:500;margin-top:20px;letter-spacing:0.5px;">Ready to search items</div>';
+}, 400);
+    document.getElementById("result").innerHTML =
+      '<div style="text-align:center;color:var(--text-color,#FFD700);font-weight:500;margin-top:20px;letter-spacing:0.5px;">Ready to search items</div>';
   })
-  .catch(err => {
-    console.error("Failed to load sheets:", err);
-    loadFailed = true;
+  .catch((err) => {
+    console.error("Failed to load sheet:", err);
+    loadFailed = true; // mark as failed
+    
     clearInterval(progressInterval);
-    loaderFill.style.width = "100%";
-    loaderText.textContent = "Error!";
+loaderFill.style.width = "100%";
+loaderText.textContent = "Error!";
+    
     document.getElementById("result").innerHTML = `
       <div style="
         color: var(--text-color, #FFD700);
@@ -87,7 +82,8 @@ Promise.all(SHEET_URLS.map(url => fetch(url).then(r => r.json())))
         margin-top: 20px;
         letter-spacing: 0.5px;
       ">
-        Unable to load data.<br><br>
+        Unable to load data.<br>
+        Please check your internet connection.<br><br>
         <button id="reloadBtn" style="
           background: transparent;
           border: 1px solid var(--text-color, #FFD700);
@@ -101,8 +97,18 @@ Promise.all(SHEET_URLS.map(url => fetch(url).then(r => r.json())))
         ">⟳ Reload</button>
       </div>
     `;
+
     const reloadBtn = document.getElementById("reloadBtn");
-    if (reloadBtn) reloadBtn.addEventListener("click", () => location.reload());
+    if (reloadBtn) {
+      reloadBtn.addEventListener("click", () => {
+        document.getElementById("result").innerHTML = `
+          <div class="loader-container">
+            <div class="loader"></div>
+            <div class="loader-text">Reloading...</div>
+          </div>`;
+        location.reload();
+      });
+    }
   });
 
 // live search
