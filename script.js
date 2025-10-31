@@ -1,7 +1,6 @@
 // URL to fetch your sheet as JSON
 const SHEET_URL =
-  "https://docs.google.com/spreadsheets/d/1vtZ2Xmb4eKPFs_v-D-nVNAm2_d2TtqqaMFO93TtaKxM/gviz/tq?tqx=out:json";
-
+  "https://docs.google.com/spreadsheets/d/1vtZ2Xmb4eKPFs_v-D-nVNAm2_d2TtqqaMFO93TtaKxM/gviz/tq?tqx=out:json&tq=select%20A,B,C";
 let data = [];
 let dataReady = false;
 let loadFailed = false; // <--- added to prevent typing after load fails
