@@ -6,15 +6,28 @@ let data = [];
 let dataReady = false;
 let loadFailed = false; // <--- added to prevent typing after load fails
 
-// show initial loader
+// show loader with progress bar
 document.getElementById("result").innerHTML = `
   <div class="loader-container">
     <div class="loader-bar">
-      <div class="loader-fill" id="loaderFill"></div>
+      <div class="loader-fill" id="loaderFill" style="width:0%"></div>
     </div>
     <div class="loader-text" id="loaderText">Loading... 0%</div>
   </div>
 `;
+
+let progress = 0;
+const loaderFill = document.getElementById("loaderFill");
+const loaderText = document.getElementById("loaderText");
+
+// Simulate progress until data loads
+const progressInterval = setInterval(() => {
+  if (progress < 90) { // stops at 90% until fetch finishes
+    progress += Math.random() * 5; // speed variation
+    loaderFill.style.width = `${progress}%`;
+    loaderText.textContent = `Loading... ${Math.floor(progress)}%`;
+  }
+}, 150);
 
 // load sheet data
 fetch(SHEET_URL)
@@ -42,13 +55,25 @@ fetch(SHEET_URL)
 
     console.log("Loaded", data.length, "rows");
     dataReady = true;
+    clearInterval(progressInterval);
+loaderFill.style.width = "100%";
+loaderText.textContent = "Loading... 100%";
+
+setTimeout(() => {
+  document.getElementById("result").innerHTML =
+    '<div style="text-align:center;color:var(--text-color,#FFD700);font-weight:500;margin-top:20px;letter-spacing:0.5px;">Ready to search items</div>';
+}, 400);
     document.getElementById("result").innerHTML =
       '<div style="text-align:center;color:var(--text-color,#FFD700);font-weight:500;margin-top:20px;letter-spacing:0.5px;">Ready to search items</div>';
   })
   .catch((err) => {
     console.error("Failed to load sheet:", err);
     loadFailed = true; // mark as failed
-
+    
+    clearInterval(progressInterval);
+loaderFill.style.width = "100%";
+loaderText.textContent = "Error!";
+    
     document.getElementById("result").innerHTML = `
       <div style="
         color: var(--text-color, #FFD700);
