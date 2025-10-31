@@ -172,14 +172,43 @@ html[data-theme="dark"] #result {
   margin-top: 50px;
 }
 
-.loader {
-  border: 5px solid rgba(255, 255, 255, 0.2);
-  border-top: 5px solid #FFD700;
-  border-radius: 50%;
-  width: 45px;
-  height: 45px;
+/* Gold Striped Loading Bar */
+.progress-container {
+  width: 85%;
+  max-width: 420px;
+  height: 20px;
+  background: rgba(255, 215, 0, 0.15);
+  border-radius: 10px;
+  overflow: hidden;
   margin: 0 auto 12px;
-  animation: spin 1s linear infinite;
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+}
+
+.progress-bar {
+  width: 100%;
+  height: 100%;
+  background: repeating-linear-gradient(
+    45deg,
+    #FFD700,
+    #FFD700 10px,
+    #ffef8a 10px,
+    #ffef8a 20px
+  );
+  background-size: 200% 100%;
+  animation: moveStripes 1s linear infinite;
+}
+
+@keyframes moveStripes {
+  from { background-position: 0 0; }
+  to { background-position: 40px 0; }
+}
+
+/* Text under loading bar */
+.loader-text {
+  color: #FFD700;
+  font-size: 18px;
+  font-weight: 600;
+  text-align: center;
 }
 
 .loader-text {
