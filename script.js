@@ -4,39 +4,35 @@ const SHEET_URL =
 
 let data = [];
 let dataReady = false;
-let loadFailed = false;
+let loadFailed = false; // <--- added to prevent typing after load fails
 
-// Initial loader with bar + text
+// show loader with progress bar
 document.getElementById("result").innerHTML = `
   <div class="loader-container">
     <div class="loader-bar">
-      <div class="loader-fill" id="loaderFill"></div>
+      <div class="loader-fill" id="loaderFill" style="width:0%"></div>
     </div>
     <div class="loader-text" id="loaderText">Loading... 0%</div>
   </div>
 `;
 
+let progress = 0;
 const loaderFill = document.getElementById("loaderFill");
 const loaderText = document.getElementById("loaderText");
 
-let progress = 0;
+// Simulate progress until data loads
 const progressInterval = setInterval(() => {
-  if (progress < 70) {
-    progress += Math.floor(Math.random() * 5) + 1; // increase slowly
-    loaderFill.style.width = progress + "%";
-    loaderText.textContent = `Loading... ${progress}%`;
+  if (progress < 90) { // stops at 90% until fetch finishes
+    progress += Math.random() * 5; // speed variation
+    loaderFill.style.width = `${progress}%`;
+    loaderText.textContent = `Loading... ${Math.floor(progress)}%`;
   }
-}, 200);
+}, 150);
 
-// Fetch sheet data
+// load sheet data
 fetch(SHEET_URL)
   .then((res) => res.text())
   .then((txt) => {
-    clearInterval(progressInterval);
-    progress = 80;
-    loaderFill.style.width = progress + "%";
-    loaderText.textContent = `Loading... ${progress}%`;
-
     const json = JSON.parse(txt.substr(47).slice(0, -2));
     data = json.table.rows.map((r) => {
       const skuOriginal = r.c[0]?.v || "";
@@ -57,67 +53,70 @@ fetch(SHEET_URL)
       };
     });
 
-    // Simulate finishing load
-    let finishProgress = 80;
-    const finishInterval = setInterval(() => {
-      finishProgress += 4;
-      loaderFill.style.width = finishProgress + "%";
-      loaderText.textContent = `Loading... ${finishProgress}%`;
-      if (finishProgress >= 100) {
-        clearInterval(finishInterval);
-        loaderFill.style.width = "100%";
-        loaderText.textContent = "Ready to search items";
-
-        setTimeout(() => {
-          document.getElementById("result").innerHTML =
-            '<div style="text-align:center;color:var(--text-color,#FFD700);font-weight:500;margin-top:20px;letter-spacing:0.5px;">Ready to search items</div>';
-        }, 600);
-      }
-    }, 120);
-
+    console.log("Loaded", data.length, "rows");
     dataReady = true;
+    clearInterval(progressInterval);
+loaderFill.style.width = "100%";
+loaderText.textContent = "Loading... 100%";
+
+setTimeout(() => {
+  document.getElementById("result").innerHTML =
+    '<div style="text-align:center;color:var(--text-color,#FFD700);font-weight:500;margin-top:20px;letter-spacing:0.5px;">Ready to search items</div>';
+}, 400);
+    document.getElementById("result").innerHTML =
+      '<div style="text-align:center;color:var(--text-color,#FFD700);font-weight:500;margin-top:20px;letter-spacing:0.5px;">Ready to search items</div>';
   })
   .catch((err) => {
     console.error("Failed to load sheet:", err);
+    loadFailed = true; // mark as failed
+    
     clearInterval(progressInterval);
-    loadFailed = true;
-
-    loaderFill.style.width = "100%";
-    loaderText.textContent = "Failed to load";
-
-    setTimeout(() => {
-      document.getElementById("result").innerHTML = `
-        <div style="
+loaderFill.style.width = "100%";
+loaderText.textContent = "Error!";
+    
+    document.getElementById("result").innerHTML = `
+      <div style="
+        color: var(--text-color, #FFD700);
+        text-align: center;
+        font-weight: 500;
+        margin-top: 20px;
+        letter-spacing: 0.5px;
+      ">
+        Unable to load data.<br>
+        Please check your internet connection.<br><br>
+        <button id="reloadBtn" style="
+          background: transparent;
+          border: 1px solid var(--text-color, #FFD700);
           color: var(--text-color, #FFD700);
-          text-align: center;
+          border-radius: 8px;
+          padding: 8px 16px;
+          font-size: 15px;
           font-weight: 500;
-          margin-top: 20px;
-          letter-spacing: 0.5px;
-        ">
-          Unable to load,Please check your internet connection.<br><br>
-          <button id="reloadBtn" style="
-            background: transparent;
-            border: 1px solid var(--text-color, #FFD700);
-            color: var(--text-color, #FFD700);
-            border-radius: 8px;
-            padding: 8px 16px;
-            font-size: 15px;
-            font-weight: 500;
-            cursor: pointer;
-          ">⟳ Reload</button>
-        </div>
-      `;
+          cursor: pointer;
+          transition: 0.3s;
+        ">⟳ Reload</button>
+      </div>
+    `;
 
-      const reloadBtn = document.getElementById("reloadBtn");
-      if (reloadBtn) reloadBtn.addEventListener("click", () => location.reload());
-    }, 800);
+    const reloadBtn = document.getElementById("reloadBtn");
+    if (reloadBtn) {
+      reloadBtn.addEventListener("click", () => {
+        document.getElementById("result").innerHTML = `
+          <div class="loader-container">
+            <div class="loader"></div>
+            <div class="loader-text">Reloading...</div>
+          </div>`;
+        location.reload();
+      });
+    }
   });
 
-// Live search
+// live search
 document.getElementById("searchBox").addEventListener("input", onSearchInput);
 
 function onSearchInput(e) {
-  if (loadFailed || !dataReady) return;
+  if (loadFailed) return; // <--- do nothing if load failed
+  if (!dataReady) return; // <--- removed the “Please wait” screen
 
   const q = e.target.value.trim().toLowerCase();
   if (!q) {
@@ -133,7 +132,14 @@ function onSearchInput(e) {
 
   if (results.length === 0) {
     document.getElementById("result").innerHTML = `
-      <div style="color: var(--text-color, #FFD700);text-align: center;font-weight: 500;margin-top: 20px;letter-spacing: 0.5px;font-size: 1rem;">
+      <div style="
+        color: var(--text-color, #FFD700);
+        text-align: center;
+        font-weight: 500;
+        margin-top: 20px;
+        letter-spacing: 0.5px;
+        font-size: 1rem;
+      ">
         No matching item found
       </div>
     `;
@@ -167,16 +173,40 @@ function onSearchInput(e) {
   }
 }
 
+function showFullDetails(item) {
+  const allBarcodes = item.barcodes.join(", ");
+  const resultDiv = document.getElementById("result");
+  const overlay = document.createElement("div");
+  overlay.className = "overlay";
+  overlay.innerHTML = `
+    <div class="card expanded">
+      <strong>${escapeHtml(item.name)}</strong><br>
+      SKU: ${escapeHtml(item.sku)}<br>
+      Barcodes: ${escapeHtml(allBarcodes)}<br><br>
+      <div class="barcode-img">
+        <img src="https://barcodeapi.org/api/code128/${encodeURIComponent(
+          item.primaryBarcode
+        )}" alt="Barcode" />
+      </div>
+    </div>
+  `;
+  resultDiv.appendChild(overlay);
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay) overlay.remove();
+  });
+}
+
 function escapeHtml(s) {
   return String(s || "").replace(/[&<>"']/g, (m) => {
     return (
-      { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[m] ||
-      m
+      { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[
+        m
+      ] || m
     );
   });
 }
 
-// Dark / Light theme toggle
+// Dark / Light theme toggle with memory
 const themeToggle = document.getElementById("themeToggle");
 const html = document.documentElement;
 const savedTheme = localStorage.getItem("theme") || "light";
