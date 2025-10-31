@@ -1,4 +1,10 @@
-const SHEET_URL = "data.json"; // ✅ local file
+const SHEET_URLS = ["data_part_1.json", "data_part_2.json", "data_part_3.json", "data_part_4.json"];
+
+Promise.all(SHEET_URLS.map(url => fetch(url).then(r => r.json())))
+  .then(parts => {
+    data = parts.flat(); // combine all parts
+    console.log("Loaded", data.length, "rows");
+  });
 let data = [];
 let dataReady = false;
 let loadFailed = false; // <--- added to prevent typing after load fails
