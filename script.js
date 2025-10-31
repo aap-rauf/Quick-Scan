@@ -32,19 +32,25 @@ const progressInterval = setInterval(() => {
   }
 }, 150);
 
-fetch(SHEET_URL)
-  .then((res) => res.json())
-  .then((json) => {
-    // assuming data.json is an array like:
-    // [{"sku":"123","name":"Item","barcode":"999"}]
-    data = json.map((r) => {
+const SHEET_URLS = [
+  "data_part_1.json",
+  "data_part_2.json",
+  "data_part_3.json",
+  "data_part_4.json"
+];
+
+Promise.all(SHEET_URLS.map(url => fetch(url).then(r => r.json())))
+  .then(parts => {
+    const combined = parts.flat();
+
+    data = combined.map(r => {
       const skuOriginal = r.sku || "";
       const nameOriginal = r.name || "";
       const barcodeCell = (r.barcode || "").trim();
       const barcodeList = barcodeCell
         .split(",")
-        .map((b) => b.trim())
-        .filter((b) => b);
+        .map(b => b.trim())
+        .filter(b => b);
 
       return {
         sku: skuOriginal,
@@ -52,45 +58,27 @@ fetch(SHEET_URL)
         barcodes: barcodeList,
         primaryBarcode: barcodeList[0] || "",
         searchSku: skuOriginal.toLowerCase(),
-        searchBarcodes: barcodeList.map((b) => b.toLowerCase()),
+        searchBarcodes: barcodeList.map(b => b.toLowerCase())
       };
     });
 
-    // ✅ mark complete
     console.log("Loaded", data.length, "rows");
     dataReady = true;
     clearInterval(progressInterval);
     loaderFill.style.width = "100%";
     loaderText.textContent = "Loading... 100%";
 
-    // show message after a short pause
     setTimeout(() => {
       document.getElementById("result").innerHTML =
         '<div style="text-align:center;color:var(--text-color,#FFD700);font-weight:500;margin-top:20px;letter-spacing:0.5px;">Ready to search items</div>';
     }, 400);
   })
-
-    console.log("Loaded", data.length, "rows");
-    dataReady = true;
+  .catch(err => {
+    console.error("Failed to load sheets:", err);
+    loadFailed = true;
     clearInterval(progressInterval);
-loaderFill.style.width = "100%";
-loaderText.textContent = "Loading... 100%";
-
-setTimeout(() => {
-  document.getElementById("result").innerHTML =
-    '<div style="text-align:center;color:var(--text-color,#FFD700);font-weight:500;margin-top:20px;letter-spacing:0.5px;">Ready to search items</div>';
-}, 400);
-    document.getElementById("result").innerHTML =
-      '<div style="text-align:center;color:var(--text-color,#FFD700);font-weight:500;margin-top:20px;letter-spacing:0.5px;">Ready to search items</div>';
-  })
-  .catch((err) => {
-    console.error("Failed to load sheet:", err);
-    loadFailed = true; // mark as failed
-    
-    clearInterval(progressInterval);
-loaderFill.style.width = "100%";
-loaderText.textContent = "Error!";
-    
+    loaderFill.style.width = "100%";
+    loaderText.textContent = "Error!";
     document.getElementById("result").innerHTML = `
       <div style="
         color: var(--text-color, #FFD700);
@@ -99,7 +87,7 @@ loaderText.textContent = "Error!";
         margin-top: 20px;
         letter-spacing: 0.5px;
       ">
-        Unable to load,Please check your internet connection.<br><br>
+        Unable to load data.<br><br>
         <button id="reloadBtn" style="
           background: transparent;
           border: 1px solid var(--text-color, #FFD700);
@@ -113,18 +101,8 @@ loaderText.textContent = "Error!";
         ">⟳ Reload</button>
       </div>
     `;
-
     const reloadBtn = document.getElementById("reloadBtn");
-    if (reloadBtn) {
-      reloadBtn.addEventListener("click", () => {
-        document.getElementById("result").innerHTML = `
-          <div class="loader-container">
-            <div class="loader"></div>
-            <div class="loader-text">Reloading...</div>
-          </div>`;
-        location.reload();
-      });
-    }
+    if (reloadBtn) reloadBtn.addEventListener("click", () => location.reload());
   });
 
 // live search
