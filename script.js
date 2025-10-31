@@ -10,9 +10,9 @@ let loadFailed = false; // <--- added to prevent typing after load fails
 document.getElementById("result").innerHTML = `
   <div class="loader-container">
     <div class="loader-bar">
-      <div class="loader-fill"></div>
+      <div class="loader-fill" id="loaderFill"></div>
     </div>
-    <div class="loader-text">Loading...</div>
+    <div class="loader-text" id="loaderText">Loading... 0%</div>
   </div>
 `;
 
