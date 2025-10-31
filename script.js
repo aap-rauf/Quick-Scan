@@ -66,7 +66,7 @@ fetch(SHEET_URL)
       if (finishProgress >= 100) {
         clearInterval(finishInterval);
         loaderFill.style.width = "100%";
-        loaderText.textContent = "✅ Ready to search items";
+        loaderText.textContent = "Ready to search items";
 
         setTimeout(() => {
           document.getElementById("result").innerHTML =
@@ -83,7 +83,7 @@ fetch(SHEET_URL)
     loadFailed = true;
 
     loaderFill.style.width = "100%";
-    loaderText.textContent = "❌ Failed to load";
+    loaderText.textContent = "Failed to load";
 
     setTimeout(() => {
       document.getElementById("result").innerHTML = `
@@ -94,8 +94,7 @@ fetch(SHEET_URL)
           margin-top: 20px;
           letter-spacing: 0.5px;
         ">
-          Unable to load data.<br>
-          Please check your internet connection.<br><br>
+          Unable to load,Please check your internet connection.<br><br>
           <button id="reloadBtn" style="
             background: transparent;
             border: 1px solid var(--text-color, #FFD700);
