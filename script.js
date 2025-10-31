@@ -9,7 +9,9 @@ let loadFailed = false; // <--- added to prevent typing after load fails
 // show initial loader
 document.getElementById("result").innerHTML = `
   <div class="loader-container">
-    <div class="loader"></div>
+    <div class="progress-container">
+      <div class="progress-bar"></div>
+    </div>
     <div class="loader-text">Loading...</div>
   </div>
 `;
