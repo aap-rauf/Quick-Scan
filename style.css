@@ -193,17 +193,11 @@ html[data-theme="dark"] #result {
 }
 
 .loader-fill {
-  height: 100%;
   width: 0%;
-  background: repeating-linear-gradient(
-    45deg,
-    #FFD700,
-    #FFD700 10px,
-    #e6c200 10px,
-    #e6c200 20px
-  );
+  height: 100%;
+  background-color: #FFD700; /* solid gold */
   border-radius: 6px;
-  transition: width 0.3s ease;
+  transition: width 0.3s ease; /* smooth progress animation */
 }
 
 .loader-text {
