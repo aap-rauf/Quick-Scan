@@ -1,126 +1,105 @@
-// URL to fetch your sheet as JSON
-const SHEET_URL =
-  "https://docs.google.com/spreadsheets/d/1vtZ2Xmb4eKPFs_v-D-nVNAm2_d2TtqqaMFO93TtaKxM/gviz/tq?tqx=out:json";
+// --- JSON file parts ---
+const LOCAL_JSON_PARTS = [
+  "./data_part_1.json",
+  "./data_part_2.json",
+  "./data_part_3.json",
+  "./data_part_4.json"
+];
 
 let data = [];
 let dataReady = false;
-let loadFailed = false; // <--- added to prevent typing after load fails
+let loadFailed = false;
 
-// show loader with progress bar
-document.getElementById("result").innerHTML = `
-  <div class="loader-container">
-    <div class="loader-bar">
-      <div class="loader-fill" id="loaderFill" style="width:0%"></div>
-    </div>
-    <div class="loader-text" id="loaderText">Loading... 0%</div>
+// --- Build one loader inside #loading ---
+const loadingDiv = document.getElementById("loading");
+loadingDiv.innerHTML = `
+  <div class="loader-wrapper">
+    <div class="loader-bar"><div class="loader-fill" id="loaderFill"></div></div>
+    <p class="loader-text" id="loaderText">Loading... 0%</p>
   </div>
 `;
 
-let progress = 0;
 const loaderFill = document.getElementById("loaderFill");
 const loaderText = document.getElementById("loaderText");
 
-// Simulate progress until data loads
-const progressInterval = setInterval(() => {
-  if (progress < 90) { // stops at 90% until fetch finishes
-    progress += Math.random() * 5; // speed variation
-    loaderFill.style.width = `${progress}%`;
-    loaderText.textContent = `Loading... ${Math.floor(progress)}%`;
+function updateProgress(percent) {
+  loaderFill.style.width = percent + "%";
+  if (percent >= 70 && percent < 100) {
+    loaderText.textContent = `Almost ready... ${percent}%`;
+  } else if (percent >= 100) {
+    loaderText.textContent = `Ready to search!`;
+  } else {
+    loaderText.textContent = `Loading... ${percent}%`;
   }
-}, 150);
+}
 
-// load sheet data
-fetch(SHEET_URL)
-  .then((res) => res.text())
-  .then((txt) => {
-    const json = JSON.parse(txt.substr(47).slice(0, -2));
-    data = json.table.rows.map((r) => {
-      const skuOriginal = r.c[0]?.v || "";
-      const nameOriginal = r.c[1]?.v || "";
-      const barcodeCell = (r.c[2]?.v || "").trim();
+// --- Load JSON files ---
+let loadedFiles = 0;
+Promise.all(
+  LOCAL_JSON_PARTS.map(url =>
+    fetch(url)
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
+      .then(json => {
+        loadedFiles++;
+        const percent = Math.floor((loadedFiles / LOCAL_JSON_PARTS.length) * 100);
+        updateProgress(percent);
+        return json;
+      })
+  )
+)
+  .then(parts => {
+    data = parts.flat().map(r => {
+      const skuOriginal = r.sku || "";
+      const nameOriginal = r.name || "";
+      const barcodeCell = (r.barcode || "").trim();
       const barcodeList = barcodeCell
         .split(",")
-        .map((b) => b.trim())
-        .filter((b) => b);
-
+        .map(b => b.trim())
+        .filter(b => b);
       return {
         sku: skuOriginal,
         name: nameOriginal,
         barcodes: barcodeList,
         primaryBarcode: barcodeList[0] || "",
         searchSku: skuOriginal.toLowerCase(),
-        searchBarcodes: barcodeList.map((b) => b.toLowerCase()),
+        searchBarcodes: barcodeList.map(b => b.toLowerCase()),
       };
     });
 
-    console.log("Loaded", data.length, "rows");
     dataReady = true;
-    clearInterval(progressInterval);
-loaderFill.style.width = "100%";
-loaderText.textContent = "Loading... 100%";
+    updateProgress(100);
 
-setTimeout(() => {
-  document.getElementById("result").innerHTML =
-    '<div style="text-align:center;color:var(--text-color,#FFD700);font-weight:500;margin-top:20px;letter-spacing:0.5px;">Ready to search items</div>';
-}, 400);
-    document.getElementById("result").innerHTML =
-      '<div style="text-align:center;color:var(--text-color,#FFD700);font-weight:500;margin-top:20px;letter-spacing:0.5px;">Ready to search items</div>';
-  })
-  .catch((err) => {
-    console.error("Failed to load sheet:", err);
-    loadFailed = true; // mark as failed
-    
-    clearInterval(progressInterval);
-loaderFill.style.width = "100%";
-loaderText.textContent = "Error!";
-    
-    document.getElementById("result").innerHTML = `
-      <div style="
-        color: var(--text-color, #FFD700);
-        text-align: center;
-        font-weight: 500;
-        margin-top: 20px;
-        letter-spacing: 0.5px;
-      ">
-        Unable to load.<br>
-        Please check your internet connection.<br><br>
-        <button id="reloadBtn" style="
-          background: transparent;
-          border: 1px solid var(--text-color, #FFD700);
-          color: var(--text-color, #FFD700);
-          border-radius: 8px;
-          padding: 8px 16px;
-          font-size: 15px;
-          font-weight: 500;
-          cursor: pointer;
-          transition: 0.3s;
-        ">⟳ Reload</button>
-      </div>
-    `;
-
-    const reloadBtn = document.getElementById("reloadBtn");
-    if (reloadBtn) {
-      reloadBtn.addEventListener("click", () => {
+    // smooth fade out loader
+    setTimeout(() => {
+      loadingDiv.style.opacity = "0";
+      setTimeout(() => {
+        loadingDiv.style.display = "none";
         document.getElementById("result").innerHTML = `
-          <div class="loader-container">
-            <div class="loader"></div>
-            <div class="loader-text">Reloading...</div>
-          </div>`;
-        location.reload();
-      });
-    }
+          <div class="ready-text">Ready to search items</div>
+        `;
+      }, 500);
+    }, 600);
+  })
+  .catch(err => {
+    console.error("JSON load error:", err);
+    loadFailed = true;
+    loaderText.textContent = "Unable to load data";
+    loaderFill.style.background = "red";
+    loaderFill.style.width = "100%";
   });
 
-// live search
-document.getElementById("searchBox").addEventListener("input", onSearchInput);
+// --- Search function ---
+const searchBox = document.getElementById("searchBox");
+const resultDiv = document.getElementById("result");
 
-function onSearchInput(e) {
-  if (loadFailed) return; // <--- do nothing if load failed
-  if (!dataReady) return; // <--- removed the “Please wait” screen
-
+searchBox.addEventListener("input", (e) => {
+  if (loadFailed || !dataReady) return;
   const q = e.target.value.trim().toLowerCase();
   if (!q) {
-    document.getElementById("result").innerHTML = "";
+    resultDiv.innerHTML = "";
     return;
   }
 
@@ -131,17 +110,8 @@ function onSearchInput(e) {
   );
 
   if (results.length === 0) {
-    document.getElementById("result").innerHTML = `
-      <div style="
-        color: var(--text-color, #FFD700);
-        text-align: center;
-        font-weight: 500;
-        margin-top: 20px;
-        letter-spacing: 0.5px;
-        font-size: 1rem;
-      ">
-        No matching item found
-      </div>
+    resultDiv.innerHTML = `
+      <div class="no-result">No matching item found</div>
     `;
   } else {
     const item = results[0];
@@ -149,8 +119,7 @@ function onSearchInput(e) {
       item.barcodes.length > 1
         ? `${item.barcodes[0]} <span class='more'>…</span>`
         : item.barcodes[0];
-
-    document.getElementById("result").innerHTML = `
+    resultDiv.innerHTML = `
       <div class="card">
         <strong>${escapeHtml(item.name)}</strong><br>
         SKU: ${escapeHtml(item.sku)}<br>
@@ -171,30 +140,7 @@ function onSearchInput(e) {
       });
     }
   }
-}
-
-function showFullDetails(item) {
-  const allBarcodes = item.barcodes.join(", ");
-  const resultDiv = document.getElementById("result");
-  const overlay = document.createElement("div");
-  overlay.className = "overlay";
-  overlay.innerHTML = `
-    <div class="card expanded">
-      <strong>${escapeHtml(item.name)}</strong><br>
-      SKU: ${escapeHtml(item.sku)}<br>
-      Barcodes: ${escapeHtml(allBarcodes)}<br><br>
-      <div class="barcode-img">
-        <img src="https://barcodeapi.org/api/code128/${encodeURIComponent(
-          item.primaryBarcode
-        )}" alt="Barcode" />
-      </div>
-    </div>
-  `;
-  resultDiv.appendChild(overlay);
-  overlay.addEventListener("click", (e) => {
-    if (e.target === overlay) overlay.remove();
-  });
-}
+});
 
 function escapeHtml(s) {
   return String(s || "").replace(/[&<>"']/g, (m) => {
@@ -206,7 +152,7 @@ function escapeHtml(s) {
   });
 }
 
-// Dark / Light theme toggle with memory
+// --- Theme toggle ---
 const themeToggle = document.getElementById("themeToggle");
 const html = document.documentElement;
 const savedTheme = localStorage.getItem("theme") || "light";
