@@ -1,4 +1,4 @@
-// --- Load JSON parts from local files ---
+// --- JSON file parts ---
 const LOCAL_JSON_PARTS = [
   "./data_part_1.json",
   "./data_part_2.json",
@@ -10,25 +10,25 @@ let data = [];
 let dataReady = false;
 let loadFailed = false;
 
-// --- Loader setup ---
-const resultDiv = document.getElementById("result");
-resultDiv.innerHTML = `
-  <div class="loader-container">
-    <div class="loader-bar">
-      <div class="loader-fill" id="loaderFill" style="width:0%"></div>
-    </div>
-    <div class="loader-text" id="loaderText">Loading... 0%</div>
-  </div>
-`;
+const loadingDiv = document.getElementById("loading");
+const loaderText = document.createElement("p");
+loaderText.className = "loader-text";
+loaderText.textContent = "Loading... 0%";
 
-const loaderFill = document.getElementById("loaderFill");
-const loaderText = document.getElementById("loaderText");
-let loadedFiles = 0;
+const loaderBar = document.createElement("div");
+loaderBar.className = "loader-bar";
+const loaderFill = document.createElement("div");
+loaderFill.className = "loader-fill";
+loaderFill.style.width = "0%";
+loaderBar.appendChild(loaderFill);
 
-function updateProgress() {
+loadingDiv.innerHTML = "";
+loadingDiv.appendChild(loaderBar);
+loadingDiv.appendChild(loaderText);
+
+function updateProgress(loadedFiles) {
   const percent = Math.floor((loadedFiles / LOCAL_JSON_PARTS.length) * 100);
   loaderFill.style.width = percent + "%";
-
   if (percent >= 70 && percent < 100) {
     loaderText.textContent = `Almost ready... ${percent}%`;
   } else if (percent >= 100) {
@@ -38,7 +38,7 @@ function updateProgress() {
   }
 }
 
-// --- Load and combine all JSON files ---
+// --- Load JSON files ---
 Promise.all(
   LOCAL_JSON_PARTS.map(url =>
     fetch(url)
@@ -47,15 +47,13 @@ Promise.all(
         return res.json();
       })
       .then(json => {
-        loadedFiles++;
-        updateProgress();
+        updateProgress(LOCAL_JSON_PARTS.indexOf(url) + 1);
         return json;
       })
   )
 )
   .then(parts => {
-    const combined = parts.flat();
-    data = combined.map(r => {
+    data = parts.flat().map(r => {
       const skuOriginal = r.sku || "";
       const nameOriginal = r.name || "";
       const barcodeCell = (r.barcode || "").trim();
@@ -63,7 +61,6 @@ Promise.all(
         .split(",")
         .map(b => b.trim())
         .filter(b => b);
-
       return {
         sku: skuOriginal,
         name: nameOriginal,
@@ -75,53 +72,26 @@ Promise.all(
     });
 
     dataReady = true;
-    updateProgress();
-
+    loaderText.textContent = "Ready to search!";
     setTimeout(() => {
-      document.getElementById("result").innerHTML =
-        '<div style="text-align:center;color:var(--text-color,#FFD700);font-weight:500;margin-top:20px;letter-spacing:0.5px;">Ready to search items</div>';
-    }, 500);
+      loadingDiv.style.display = "none";
+    }, 700);
   })
   .catch(err => {
-    console.error("Failed to load JSON:", err);
+    console.error("JSON load error:", err);
     loadFailed = true;
-    loaderFill.style.width = "100%";
     loaderText.textContent = "Error loading data";
-    document.getElementById("result").innerHTML = `
-      <div style="
-        color: var(--text-color, #FFD700);
-        text-align: center;
-        font-weight: 500;
-        margin-top: 20px;
-        letter-spacing: 0.5px;
-      ">
-        Unable to load data.<br><br>
-        <button id="reloadBtn" style="
-          background: transparent;
-          border: 1px solid var(--text-color, #FFD700);
-          color: var(--text-color, #FFD700);
-          border-radius: 8px;
-          padding: 8px 16px;
-          font-size: 15px;
-          font-weight: 500;
-          cursor: pointer;
-          transition: 0.3s;
-        ">⟳ Reload</button>
-      </div>
-    `;
-    const reloadBtn = document.getElementById("reloadBtn");
-    if (reloadBtn) reloadBtn.addEventListener("click", () => location.reload());
   });
 
-// --- Live Search ---
-document.getElementById("searchBox").addEventListener("input", onSearchInput);
+// --- Search function ---
+const searchBox = document.getElementById("searchBox");
+const resultDiv = document.getElementById("result");
 
-function onSearchInput(e) {
+searchBox.addEventListener("input", (e) => {
   if (loadFailed || !dataReady) return;
-
   const q = e.target.value.trim().toLowerCase();
   if (!q) {
-    document.getElementById("result").innerHTML = "";
+    resultDiv.innerHTML = "";
     return;
   }
 
@@ -132,17 +102,8 @@ function onSearchInput(e) {
   );
 
   if (results.length === 0) {
-    document.getElementById("result").innerHTML = `
-      <div style="
-        color: var(--text-color, #FFD700);
-        text-align: center;
-        font-weight: 500;
-        margin-top: 20px;
-        letter-spacing: 0.5px;
-        font-size: 1rem;
-      ">
-        No matching item found
-      </div>
+    resultDiv.innerHTML = `
+      <div style="color:var(--text-color,#FFD700);text-align:center;">No matching item found</div>
     `;
   } else {
     const item = results[0];
@@ -150,8 +111,7 @@ function onSearchInput(e) {
       item.barcodes.length > 1
         ? `${item.barcodes[0]} <span class='more'>…</span>`
         : item.barcodes[0];
-
-    document.getElementById("result").innerHTML = `
+    resultDiv.innerHTML = `
       <div class="card">
         <strong>${escapeHtml(item.name)}</strong><br>
         SKU: ${escapeHtml(item.sku)}<br>
@@ -172,7 +132,7 @@ function onSearchInput(e) {
       });
     }
   }
-}
+});
 
 function escapeHtml(s) {
   return String(s || "").replace(/[&<>"']/g, (m) => {
@@ -184,7 +144,7 @@ function escapeHtml(s) {
   });
 }
 
-// --- Theme Toggle ---
+// --- Theme toggle ---
 const themeToggle = document.getElementById("themeToggle");
 const html = document.documentElement;
 const savedTheme = localStorage.getItem("theme") || "light";
