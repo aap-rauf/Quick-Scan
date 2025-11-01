@@ -23,17 +23,33 @@ let progress = 0;
 const loaderFill = document.getElementById("loaderFill");
 const loaderText = document.getElementById("loaderText");
 
-// Simulate progress until data loads
-const progressInterval = setInterval(() => {
-  if (progress < 90) { // stops at 90% until fetch finishes
-    progress += Math.random() * 5; // speed variation
-    loaderFill.style.width = `${progress}%`;
-    loaderText.textContent = `Loading... ${Math.floor(progress)}%`;
+let loadedFiles = 0;
+
+function updateProgress() {
+  const percent = Math.floor((loadedFiles / LOCAL_JSON_PARTS.length) * 100);
+  loaderFill.style.width = `${percent}%`;
+
+  if (percent >= 70 && percent < 100) {
+    loaderText.textContent = `Almost ready... ${percent}%`;
+  } else if (percent >= 100) {
+    loaderText.textContent = `Ready to search!`;
+  } else {
+    loaderText.textContent = `Loading... ${percent}%`;
   }
-}, 150);
+}
 
 // load local JSON parts
-Promise.all(LOCAL_JSON_PARTS.map(url => fetch(url).then(res => res.json())))
+Promise.all(
+  LOCAL_JSON_PARTS.map(url =>
+    fetch(url)
+      .then(res => res.json())
+      .then(json => {
+        loadedFiles++;
+        updateProgress();
+        return json;
+      })
+  )
+)
   .then(parts => {
     const combined = parts.flat();
     data = combined.map(r => {
@@ -55,12 +71,8 @@ Promise.all(LOCAL_JSON_PARTS.map(url => fetch(url).then(res => res.json())))
       };
     });
 
-    console.log("Loaded", data.length, "rows");
     dataReady = true;
-    clearInterval(progressInterval);
-    loaderFill.style.width = "100%";
-    loaderText.textContent = "Loading... 100%";
-
+    updateProgress(); // to show 100%
     setTimeout(() => {
       document.getElementById("result").innerHTML =
         '<div style="text-align:center;color:var(--text-color,#FFD700);font-weight:500;margin-top:20px;letter-spacing:0.5px;">Ready to search items</div>';
@@ -69,9 +81,8 @@ Promise.all(LOCAL_JSON_PARTS.map(url => fetch(url).then(res => res.json())))
   .catch(err => {
     console.error("Failed to load JSON:", err);
     loadFailed = true;
-    clearInterval(progressInterval);
     loaderFill.style.width = "100%";
-    loaderText.textContent = "Error!";
+    loaderText.textContent = "Error loading data";
     document.getElementById("result").innerHTML = `
       <div style="
         color: var(--text-color, #FFD700);
