@@ -1,3 +1,4 @@
+// --- Load JSON parts from local files ---
 const LOCAL_JSON_PARTS = [
   "./data_part_1.json",
   "./data_part_2.json",
@@ -7,10 +8,11 @@ const LOCAL_JSON_PARTS = [
 
 let data = [];
 let dataReady = false;
-let loadFailed = false; // <--- added to prevent typing after load fails
+let loadFailed = false;
 
-// show loader with progress bar
-document.getElementById("result").innerHTML = `
+// --- Loader setup ---
+const resultDiv = document.getElementById("result");
+resultDiv.innerHTML = `
   <div class="loader-container">
     <div class="loader-bar">
       <div class="loader-fill" id="loaderFill" style="width:0%"></div>
@@ -19,15 +21,13 @@ document.getElementById("result").innerHTML = `
   </div>
 `;
 
-let progress = 0;
 const loaderFill = document.getElementById("loaderFill");
 const loaderText = document.getElementById("loaderText");
-
 let loadedFiles = 0;
 
 function updateProgress() {
   const percent = Math.floor((loadedFiles / LOCAL_JSON_PARTS.length) * 100);
-  loaderFill.style.width = `${percent}%`;
+  loaderFill.style.width = percent + "%";
 
   if (percent >= 70 && percent < 100) {
     loaderText.textContent = `Almost ready... ${percent}%`;
@@ -38,11 +38,14 @@ function updateProgress() {
   }
 }
 
-// load local JSON parts
+// --- Load and combine all JSON files ---
 Promise.all(
   LOCAL_JSON_PARTS.map(url =>
     fetch(url)
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
       .then(json => {
         loadedFiles++;
         updateProgress();
@@ -72,11 +75,12 @@ Promise.all(
     });
 
     dataReady = true;
-    updateProgress(); // to show 100%
+    updateProgress();
+
     setTimeout(() => {
       document.getElementById("result").innerHTML =
         '<div style="text-align:center;color:var(--text-color,#FFD700);font-weight:500;margin-top:20px;letter-spacing:0.5px;">Ready to search items</div>';
-    }, 400);
+    }, 500);
   })
   .catch(err => {
     console.error("Failed to load JSON:", err);
@@ -109,12 +113,11 @@ Promise.all(
     if (reloadBtn) reloadBtn.addEventListener("click", () => location.reload());
   });
 
-// live search
+// --- Live Search ---
 document.getElementById("searchBox").addEventListener("input", onSearchInput);
 
 function onSearchInput(e) {
-  if (loadFailed) return; // <--- do nothing if load failed
-  if (!dataReady) return; // <--- removed the “Please wait” screen
+  if (loadFailed || !dataReady) return;
 
   const q = e.target.value.trim().toLowerCase();
   if (!q) {
@@ -171,29 +174,6 @@ function onSearchInput(e) {
   }
 }
 
-function showFullDetails(item) {
-  const allBarcodes = item.barcodes.join(", ");
-  const resultDiv = document.getElementById("result");
-  const overlay = document.createElement("div");
-  overlay.className = "overlay";
-  overlay.innerHTML = `
-    <div class="card expanded">
-      <strong>${escapeHtml(item.name)}</strong><br>
-      SKU: ${escapeHtml(item.sku)}<br>
-      Barcodes: ${escapeHtml(allBarcodes)}<br><br>
-      <div class="barcode-img">
-        <img src="https://barcodeapi.org/api/code128/${encodeURIComponent(
-          item.primaryBarcode
-        )}" alt="Barcode" />
-      </div>
-    </div>
-  `;
-  resultDiv.appendChild(overlay);
-  overlay.addEventListener("click", (e) => {
-    if (e.target === overlay) overlay.remove();
-  });
-}
-
 function escapeHtml(s) {
   return String(s || "").replace(/[&<>"']/g, (m) => {
     return (
@@ -204,7 +184,7 @@ function escapeHtml(s) {
   });
 }
 
-// Dark / Light theme toggle with memory
+// --- Theme Toggle ---
 const themeToggle = document.getElementById("themeToggle");
 const html = document.documentElement;
 const savedTheme = localStorage.getItem("theme") || "light";
