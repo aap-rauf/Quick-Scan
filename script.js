@@ -1,8 +1,8 @@
 const LOCAL_JSON_PARTS = [
-  "data_part_1.json",
-  "data_part_2.json",
-  "data_part_3.json",
-  "data_part_4.json"
+  "./data_part_1.json",
+  "./data_part_2.json",
+  "./data_part_3.json",
+  "./data_part_4.json"
 ];
 
 let data = [];
