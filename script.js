@@ -82,7 +82,7 @@ loaderText.textContent = "Error!";
         margin-top: 20px;
         letter-spacing: 0.5px;
       ">
-        Unable to load data.<br>
+        Unable to load.<br>
         Please check your internet connection.<br><br>
         <button id="reloadBtn" style="
           background: transparent;
