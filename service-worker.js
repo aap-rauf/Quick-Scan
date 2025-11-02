@@ -1,16 +1,16 @@
 const CACHE_NAME = "easy-scan-cache-v2";
 const assetsToCache = [
   "./",
-  "./index.html",
-  "./manifest.json",
-  "./style.css",
-  "./script.js",
-  "./data_part_1.json",
-  "./data_part_2.json",
-  "./data_part_3.json",
-  "./data_part_4.json",
-  "./icons/icon-192.png",
-  "./icons/icon-512.png"
+  "index.html",
+  "manifest.json",
+  "style.css",
+  "script.js",
+  "data_part_1.json",
+  "data_part_2.json",
+  "data_part_3.json",
+  "data_part_4.json",
+  "icons/icon-192.png",
+  "icons/icon-512.png"
 ];
 
 // Install: pre-cache all assets
