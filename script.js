@@ -1,18 +1,13 @@
-const LOCAL_JSON_PARTS = [
-
-  "https://aap-rauf.github.io/Quick-Scan/data_part_1.json",
-  "https://aap-rauf.github.io/Quick-Scan/data_part_2.json",
-  "https://aap-rauf.github.io/Quick-Scan/data_part_3.json",
-  "https://aap-rauf.github.io/Quick-Scan/data_part_4.json"
-];
+// URL to fetch your sheet as JSON
+const SHEET_URL =
+  "https://docs.google.com/spreadsheets/d/1vtZ2Xmb4eKPFs_v-D-nVNAm2_d2TtqqaMFO93TtaKxM/gviz/tq?tqx=out:json";
 
 let data = [];
 let dataReady = false;
-let loadFailed = false;
+let loadFailed = false; // <--- added to prevent typing after load fails
 
-// Inject loader UI once
-const resultDiv = document.getElementById("result");
-resultDiv.innerHTML = `
+// show loader with progress bar
+document.getElementById("result").innerHTML = `
   <div class="loader-container">
     <div class="loader-bar">
       <div class="loader-fill" id="loaderFill" style="width:0%"></div>
@@ -21,49 +16,32 @@ resultDiv.innerHTML = `
   </div>
 `;
 
+let progress = 0;
 const loaderFill = document.getElementById("loaderFill");
 const loaderText = document.getElementById("loaderText");
-let loadedFiles = 0;
 
-// update progress display
-function updateProgress() {
-  const percent = Math.floor((loadedFiles / LOCAL_JSON_PARTS.length) * 100);
-  loaderFill.style.width = `${percent}%`;
-
-  if (percent >= 70 && percent < 100) {
-    loaderText.textContent = `Almost ready... ${percent}%`;
-  } else if (percent >= 100) {
-    loaderText.textContent = `Ready to search!`;
-  } else {
-    loaderText.textContent = `Loading... ${percent}%`;
+// Simulate progress until data loads
+const progressInterval = setInterval(() => {
+  if (progress < 90) { // stops at 90% until fetch finishes
+    progress += Math.random() * 5; // speed variation
+    loaderFill.style.width = `${progress}%`;
+    loaderText.textContent = `Loading... ${Math.floor(progress)}%`;
   }
-}
+}, 150);
 
-// fetch and merge all JSON files
-Promise.all(
-  LOCAL_JSON_PARTS.map(url =>
-    fetch(url)
-      .then(res => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-      })
-      .then(json => {
-        loadedFiles++;
-        updateProgress();
-        return json;
-      })
-  )
-)
-  .then(parts => {
-    const combined = parts.flat();
-    data = combined.map(r => {
-      const skuOriginal = r.sku || "";
-      const nameOriginal = r.name || "";
-      const barcodeCell = (r.barcode || "").trim();
+// load sheet data
+fetch(SHEET_URL)
+  .then((res) => res.text())
+  .then((txt) => {
+    const json = JSON.parse(txt.substr(47).slice(0, -2));
+    data = json.table.rows.map((r) => {
+      const skuOriginal = r.c[0]?.v || "";
+      const nameOriginal = r.c[1]?.v || "";
+      const barcodeCell = (r.c[2]?.v || "").trim();
       const barcodeList = barcodeCell
         .split(",")
-        .map(b => b.trim())
-        .filter(b => b);
+        .map((b) => b.trim())
+        .filter((b) => b);
 
       return {
         sku: skuOriginal,
@@ -71,82 +49,96 @@ Promise.all(
         barcodes: barcodeList,
         primaryBarcode: barcodeList[0] || "",
         searchSku: skuOriginal.toLowerCase(),
-        searchBarcodes: barcodeList.map(b => b.toLowerCase())
+        searchBarcodes: barcodeList.map((b) => b.toLowerCase()),
       };
     });
 
+    console.log("Loaded", data.length, "rows");
     dataReady = true;
-    updateProgress();
+    clearInterval(progressInterval);
+loaderFill.style.width = "100%";
+loaderText.textContent = "Loading... 100%";
 
-    // show “Ready” message in same style
-    setTimeout(() => {
-      resultDiv.innerHTML = `
-        <div style="
-          text-align:center;
-          color:#FFD700;
-          font-weight:600;
-          font-size:18px;
-          letter-spacing:0.5px;
-          margin-top:20px;
-        ">
-          Ready to search items
-        </div>`;
-    }, 400);
+setTimeout(() => {
+  document.getElementById("result").innerHTML =
+    '<div style="text-align:center;color:var(--text-color,#FFD700);font-weight:500;margin-top:20px;letter-spacing:0.5px;">Ready to search items</div>';
+}, 400);
+    document.getElementById("result").innerHTML =
+      '<div style="text-align:center;color:var(--text-color,#FFD700);font-weight:500;margin-top:20px;letter-spacing:0.5px;">Ready to search items</div>';
   })
-  .catch(err => {
-    console.error("Failed to load JSON:", err);
-    loadFailed = true;
-    resultDiv.innerHTML = `
+  .catch((err) => {
+    console.error("Failed to load sheet:", err);
+    loadFailed = true; // mark as failed
+    
+    clearInterval(progressInterval);
+loaderFill.style.width = "100%";
+loaderText.textContent = "Error!";
+    
+    document.getElementById("result").innerHTML = `
       <div style="
-        color:#FFD700;
-        text-align:center;
-        font-weight:600;
-        font-size:18px;
-        margin-top:20px;
-        letter-spacing:0.5px;
+        color: var(--text-color, #FFD700);
+        text-align: center;
+        font-weight: 500;
+        margin-top: 20px;
+        letter-spacing: 0.5px;
       ">
-        Unable to load data.<br><br>
+        Unable to load.<br>
+        Please check your internet connection.<br><br>
         <button id="reloadBtn" style="
-          background:transparent;
-          border:1px solid #FFD700;
-          color:#FFD700;
-          border-radius:8px;
-          padding:8px 16px;
-          font-size:15px;
-          font-weight:500;
-          cursor:pointer;
-          transition:0.3s;
+          background: transparent;
+          border: 1px solid var(--text-color, #FFD700);
+          color: var(--text-color, #FFD700);
+          border-radius: 8px;
+          padding: 8px 16px;
+          font-size: 15px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: 0.3s;
         ">⟳ Reload</button>
       </div>
     `;
-    document.getElementById("reloadBtn").addEventListener("click", () => location.reload());
+
+    const reloadBtn = document.getElementById("reloadBtn");
+    if (reloadBtn) {
+      reloadBtn.addEventListener("click", () => {
+        document.getElementById("result").innerHTML = `
+          <div class="loader-container">
+            <div class="loader"></div>
+            <div class="loader-text">Reloading...</div>
+          </div>`;
+        location.reload();
+      });
+    }
   });
 
 // live search
-document.getElementById("searchBox").addEventListener("input", e => {
-  if (loadFailed || !dataReady) return;
+document.getElementById("searchBox").addEventListener("input", onSearchInput);
+
+function onSearchInput(e) {
+  if (loadFailed) return; // <--- do nothing if load failed
+  if (!dataReady) return; // <--- removed the “Please wait” screen
 
   const q = e.target.value.trim().toLowerCase();
   if (!q) {
-    resultDiv.innerHTML = "";
+    document.getElementById("result").innerHTML = "";
     return;
   }
 
   const results = data.filter(
-    item =>
-      item.searchBarcodes.some(b => b.endsWith(q)) ||
+    (item) =>
+      item.searchBarcodes.some((b) => b.endsWith(q)) ||
       item.searchSku.endsWith(q)
   );
 
   if (results.length === 0) {
-    resultDiv.innerHTML = `
+    document.getElementById("result").innerHTML = `
       <div style="
-        color:#FFD700;
-        text-align:center;
-        font-weight:500;
-        margin-top:20px;
-        letter-spacing:0.5px;
-        font-size:1rem;
+        color: var(--text-color, #FFD700);
+        text-align: center;
+        font-weight: 500;
+        margin-top: 20px;
+        letter-spacing: 0.5px;
+        font-size: 1rem;
       ">
         No matching item found
       </div>
@@ -158,13 +150,15 @@ document.getElementById("searchBox").addEventListener("input", e => {
         ? `${item.barcodes[0]} <span class='more'>…</span>`
         : item.barcodes[0];
 
-    resultDiv.innerHTML = `
+    document.getElementById("result").innerHTML = `
       <div class="card">
         <strong>${escapeHtml(item.name)}</strong><br>
         SKU: ${escapeHtml(item.sku)}<br>
         Barcodes: <span class="barcode-list">${barcodeDisplay}</span><br><br>
         <div class="barcode-img">
-          <img src="https://barcodeapi.org/api/code128/${encodeURIComponent(item.primaryBarcode)}" alt="Barcode" />
+          <img src="https://barcodeapi.org/api/code128/${encodeURIComponent(
+            item.primaryBarcode
+          )}" alt="Barcode" />
         </div>
       </div>
     `;
@@ -172,19 +166,47 @@ document.getElementById("searchBox").addEventListener("input", e => {
     const more = document.querySelector(".more");
     if (more) {
       more.addEventListener("click", () => {
-        document.querySelector(".barcode-list").innerText = item.barcodes.join(", ");
+        document.querySelector(".barcode-list").innerText =
+          item.barcodes.join(", ");
       });
     }
   }
-});
-
-function escapeHtml(s) {
-  return String(s || "").replace(/[&<>"']/g, m => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
-  }[m] || m));
 }
 
-// theme toggle
+function showFullDetails(item) {
+  const allBarcodes = item.barcodes.join(", ");
+  const resultDiv = document.getElementById("result");
+  const overlay = document.createElement("div");
+  overlay.className = "overlay";
+  overlay.innerHTML = `
+    <div class="card expanded">
+      <strong>${escapeHtml(item.name)}</strong><br>
+      SKU: ${escapeHtml(item.sku)}<br>
+      Barcodes: ${escapeHtml(allBarcodes)}<br><br>
+      <div class="barcode-img">
+        <img src="https://barcodeapi.org/api/code128/${encodeURIComponent(
+          item.primaryBarcode
+        )}" alt="Barcode" />
+      </div>
+    </div>
+  `;
+  resultDiv.appendChild(overlay);
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay) overlay.remove();
+  });
+}
+
+function escapeHtml(s) {
+  return String(s || "").replace(/[&<>"']/g, (m) => {
+    return (
+      { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[
+        m
+      ] || m
+    );
+  });
+}
+
+// Dark / Light theme toggle with memory
 const themeToggle = document.getElementById("themeToggle");
 const html = document.documentElement;
 const savedTheme = localStorage.getItem("theme") || "light";
@@ -198,17 +220,3 @@ themeToggle.addEventListener("click", () => {
   localStorage.setItem("theme", next);
   themeToggle.textContent = next === "light" ? "🌙" : "☀️";
 });
-function logToScreen(message) {
-  const logDiv = document.createElement("div");
-  logDiv.style.cssText = "color:#FFD700;font-size:12px;margin:5px;padding:5px;border-top:1px solid #333;word-break:break-all;";
-  logDiv.textContent = message;
-  document.body.appendChild(logDiv);
-  console.log(message);
-}
-
-// Replace console.log calls to also show on screen
-const oldLog = console.log;
-console.log = function(...args) {
-  oldLog(...args);
-  logToScreen(args.join(" "));
-};
