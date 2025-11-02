@@ -198,3 +198,17 @@ themeToggle.addEventListener("click", () => {
   localStorage.setItem("theme", next);
   themeToggle.textContent = next === "light" ? "🌙" : "☀️";
 });
+function logToScreen(message) {
+  const logDiv = document.createElement("div");
+  logDiv.style.cssText = "color:#FFD700;font-size:12px;margin:5px;padding:5px;border-top:1px solid #333;word-break:break-all;";
+  logDiv.textContent = message;
+  document.body.appendChild(logDiv);
+  console.log(message);
+}
+
+// Replace console.log calls to also show on screen
+const oldLog = console.log;
+console.log = function(...args) {
+  oldLog(...args);
+  logToScreen(args.join(" "));
+};
