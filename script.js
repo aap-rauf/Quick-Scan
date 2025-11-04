@@ -1,6 +1,10 @@
 // URL to fetch your sheet as JSON
-const SHEET_URL =
-  "https://docs.google.com/spreadsheets/d/1vtZ2Xmb4eKPFs_v-D-nVNAm2_d2TtqqaMFO93TtaKxM/gviz/tq?tqx=out:json";
+const LOCAL_JSON_PARTS = [
+  "./data_part_1.json",
+  "./data_part_2.json",
+  "./data_part_3.json",
+  "./data_part_4.json"
+];
 
 let data = [];
 let dataReady = false;
