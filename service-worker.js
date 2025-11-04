@@ -1,32 +1,30 @@
-const CACHE_NAME = "easy-scan-cache-v2";
-const assetsToCache = [
+const CACHE_NAME = "easy-scan-local-json-v1";
+const ASSETS = [
   "./",
-  "index.html",
-  "manifest.json",
-  "style.css",
-  "script.js",
-  "data_part_1.json",
-  "data_part_2.json",
-  "data_part_3.json",
-  "data_part_4.json",
-  "icons/icon-192.png",
-  "icons/icon-512.png"
+  "./index.html",
+  "./style.css",
+  "./script.js",
+  "./manifest.json",
+  "./data_part_1.json",
+  "./data_part_2.json",
+  "./data_part_3.json",
+  "./data_part_4.json",
+  "./icons/icon-192.png",
+  "./icons/icon-512.png",
 ];
 
-// Install: pre-cache all assets
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(assetsToCache))
+      .then((cache) => cache.addAll(ASSETS))
       .then(() => self.skipWaiting())
   );
 });
 
-// Activate: clear old caches
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.map((key) => {
+    caches.keys().then(keys =>
+      Promise.all(keys.map(key => {
         if (key !== CACHE_NAME) {
           return caches.delete(key);
         }
@@ -36,27 +34,21 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
-// Fetch: serve cached first, then network fallback
 self.addEventListener("fetch", (event) => {
-  const request = event.request;
-
-  // Only handle GET requests
+  const { request } = event;
   if (request.method !== "GET") return;
 
+  // Serve local JSON + other assets from cache first
   event.respondWith(
-    caches.match(request).then((cachedResponse) => {
-      if (cachedResponse) return cachedResponse;
-
-      return fetch(request)
-        .then((networkResponse) => {
-          // cache dynamically fetched JSON
-          if (request.url.endsWith(".json")) {
-            const clonedResponse = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, clonedResponse));
-          }
-          return networkResponse;
-        })
-        .catch(() => caches.match("./index.html"));
+    caches.match(request).then((cached) => {
+      if (cached) return cached;
+      return fetch(request).then((networkRes) => {
+        if (request.url.endsWith(".json")) {
+          const clone = networkRes.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+        }
+        return networkRes;
+      });
     })
   );
 });
