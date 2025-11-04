@@ -1,10 +1,3 @@
-// --- UI Elements ---
-const searchInput = document.getElementById("searchInput");
-const resultsContainer = document.getElementById("results");
-const loadingEl = document.getElementById("loading");
-const statusText = document.getElementById("status-text");
-
-// --- JSON file parts (local) ---
 const LOCAL_JSON_PARTS = [
   "./data_part_1.json",
   "./data_part_2.json",
@@ -12,103 +5,201 @@ const LOCAL_JSON_PARTS = [
   "./data_part_4.json"
 ];
 
-let allData = [];
-let dataLoaded = false;
+let data = [];
+let dataReady = false;
+let loadFailed = false;
 
-// --- Show temporary messages on screen (useful on iOS) ---
-function showError(msg) {
-  const div = document.createElement("div");
-  div.style.cssText = `
-    position: fixed;
-    bottom: 15px;
-    left: 15px;
-    right: 15px;
-    background: rgba(255, 0, 0, 0.85);
-    color: white;
-    padding: 12px;
-    border-radius: 8px;
-    text-align: center;
-    font-size: 14px;
-    z-index: 9999;
-    font-family: sans-serif;
-  `;
-  div.textContent = msg;
-  document.body.appendChild(div);
-  setTimeout(() => div.remove(), 4000);
-}
+// Show single loader
+document.getElementById("result").innerHTML = `
+  <div class="loader-container">
+    <div class="loader-bar">
+      <div class="loader-fill" id="loaderFill" style="width:0%"></div>
+    </div>
+    <div class="loader-text" id="loaderText">Loading... 0%</div>
+  </div>
+`;
 
-// --- Load all JSON files ---
-async function loadAllData() {
-  loadingEl.style.display = "block";
-  statusText.textContent = "Loading local data...";
+const loaderFill = document.getElementById("loaderFill");
+const loaderText = document.getElementById("loaderText");
+let loadedFiles = 0;
 
-  try {
-    const fetchPromises = LOCAL_JSON_PARTS.map(url => fetch(url).then(res => {
-      if (!res.ok) throw new Error(`Failed to load ${url}`);
-      return res.json();
-    }));
+function updateProgress() {
+  const percent = Math.floor((loadedFiles / LOCAL_JSON_PARTS.length) * 100);
+  loaderFill.style.width = `${percent}%`;
 
-    const parts = await Promise.all(fetchPromises);
-    allData = parts.flat();
-
-    dataLoaded = true;
-    loadingEl.style.display = "none";
-    statusText.textContent = "Ready to search ✓";
-  } catch (err) {
-    console.error("JSON load error:", err);
-    loadingEl.style.display = "none";
-    statusText.textContent = "Unable to load data ❌";
-    showError("Unable to load local JSON files");
+  if (percent >= 70 && percent < 100) {
+    loaderText.textContent = `Almost ready... ${percent}%`;
+  } else if (percent >= 100) {
+    loaderText.textContent = `Ready to search!`;
+  } else {
+    loaderText.textContent = `Loading... ${percent}%`;
   }
 }
 
-// --- Search functionality ---
-function searchItems(query) {
-  if (!dataLoaded) {
-    statusText.textContent = "Please wait, loading data...";
+// Load local JSON parts
+Promise.all(
+  LOCAL_JSON_PARTS.map(url =>
+    fetch(url)
+      .then(res => res.json())
+      .then(json => {
+        loadedFiles++;
+        updateProgress();
+        return json;
+      })
+  )
+)
+  .then(parts => {
+    const combined = parts.flat();
+
+    // Map correct JSON keys
+    data = combined.map(r => {
+      const skuOriginal = r.SKU || "";
+      const nameOriginal = r["Product Name"] || "";
+      const barcodeCell = (r.Barcodes || "").trim();
+      const barcodeList = barcodeCell
+        .split(",")
+        .map(b => b.trim())
+        .filter(b => b);
+
+      return {
+        sku: skuOriginal,
+        name: nameOriginal,
+        barcodes: barcodeList,
+        primaryBarcode: barcodeList[0] || "",
+        searchSku: skuOriginal.toLowerCase(),
+        searchBarcodes: barcodeList.map(b => b.toLowerCase()),
+      };
+    });
+
+    dataReady = true;
+    updateProgress(); // show 100%
+
+    setTimeout(() => {
+      document.getElementById("result").innerHTML = `
+        <div style="
+          text-align:center;
+          color:var(--text-color,#FFD700);
+          font-weight:500;
+          margin-top:20px;
+          letter-spacing:0.5px;
+          font-family:inherit;
+        ">
+          Ready to search items
+        </div>`;
+    }, 400);
+  })
+  .catch(err => {
+    console.error("Failed to load JSON:", err);
+    loadFailed = true;
+    loaderFill.style.width = "100%";
+    loaderText.textContent = "Error loading data";
+    document.getElementById("result").innerHTML = `
+      <div style="
+        color: var(--text-color, #FFD700);
+        text-align: center;
+        font-weight: 500;
+        margin-top: 20px;
+        letter-spacing: 0.5px;
+        font-family: inherit;
+      ">
+        Unable to load data.<br><br>
+        <button id="reloadBtn" style="
+          background: transparent;
+          border: 1px solid var(--text-color, #FFD700);
+          color: var(--text-color, #FFD700);
+          border-radius: 8px;
+          padding: 8px 16px;
+          font-size: 15px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: 0.3s;
+        ">⟳ Reload</button>
+      </div>
+    `;
+    const reloadBtn = document.getElementById("reloadBtn");
+    if (reloadBtn) reloadBtn.addEventListener("click", () => location.reload());
+  });
+
+// Live search
+document.getElementById("searchBox").addEventListener("input", onSearchInput);
+
+function onSearchInput(e) {
+  if (loadFailed || !dataReady) return;
+
+  const q = e.target.value.trim().toLowerCase();
+  if (!q) {
+    document.getElementById("result").innerHTML = "";
     return;
   }
 
-  const term = query.toLowerCase().trim();
-  if (!term) {
-    resultsContainer.innerHTML = "";
-    return;
-  }
-
-  const results = allData.filter(item =>
-    item.SKU?.toLowerCase().includes(term) ||
-    item["Product Name"]?.toLowerCase().includes(term) ||
-    item.Barcodes?.toLowerCase().includes(term) ||
-    item.Category?.toLowerCase().includes(term)
+  const results = data.filter(
+    (item) =>
+      item.searchBarcodes.some((b) => b.endsWith(q)) ||
+      item.searchSku.endsWith(q)
   );
 
-  displayResults(results);
+  if (results.length === 0) {
+    document.getElementById("result").innerHTML = `
+      <div style="
+        color: var(--text-color, #FFD700);
+        text-align: center;
+        font-weight: 500;
+        margin-top: 20px;
+        letter-spacing: 0.5px;
+        font-size: 1rem;
+      ">
+        No matching item found
+      </div>`;
+  } else {
+    const item = results[0];
+    const barcodeDisplay =
+      item.barcodes.length > 1
+        ? `${item.barcodes[0]} <span class='more'>…</span>`
+        : item.barcodes[0];
+
+    document.getElementById("result").innerHTML = `
+      <div class="card">
+        <strong>${escapeHtml(item.name)}</strong><br>
+        SKU: ${escapeHtml(item.sku)}<br>
+        Barcodes: <span class="barcode-list">${barcodeDisplay}</span><br><br>
+        <div class="barcode-img">
+          <img src="https://barcodeapi.org/api/code128/${encodeURIComponent(
+            item.primaryBarcode
+          )}" alt="Barcode" />
+        </div>
+      </div>`;
+
+    const more = document.querySelector(".more");
+    if (more) {
+      more.addEventListener("click", () => {
+        document.querySelector(".barcode-list").innerText =
+          item.barcodes.join(", ");
+      });
+    }
+  }
 }
 
-// --- Display search results ---
-function displayResults(items) {
-  resultsContainer.innerHTML = "";
-
-  if (items.length === 0) {
-    resultsContainer.innerHTML = "<p>No results found.</p>";
-    return;
-  }
-
-  items.forEach(item => {
-    const div = document.createElement("div");
-    div.className = "card";
-    div.innerHTML = `
-      <h3>${item["Product Name"] || "Unnamed Product"}</h3>
-      <p><strong>SKU:</strong> ${item.SKU || "-"}</p>
-      <p><strong>Barcode:</strong> ${item.Barcodes || "-"}</p>
-      <p><strong>Category:</strong> ${item.Category || "-"}</p>
-    `;
-    resultsContainer.appendChild(div);
+function escapeHtml(s) {
+  return String(s || "").replace(/[&<>"']/g, (m) => {
+    return (
+      { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[
+        m
+      ] || m
+    );
   });
 }
 
-// --- Event listeners ---
-searchInput.addEventListener("input", e => searchItems(e.target.value));
+// Dark/Light theme toggle
+const themeToggle = document.getElementById("themeToggle");
+const html = document.documentElement;
+const savedTheme = localStorage.getItem("theme") || "light";
+html.setAttribute("data-theme", savedTheme);
+themeToggle.textContent = savedTheme === "light" ? "🌙" : "☀️";
 
-// --- Start loading on page load ---
-document.addEventListener("DOMContentLoaded", loadAllData);
+themeToggle.addEventListener("click", () => {
+  const current = html.getAttribute("data-theme") || "light";
+  const next = current === "light" ? "dark" : "light";
+  html.setAttribute("data-theme", next);
+  localStorage.setItem("theme", next);
+  themeToggle.textContent = next === "light" ? "🌙" : "☀️";
+});
