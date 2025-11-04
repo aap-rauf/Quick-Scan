@@ -1,4 +1,4 @@
-const CACHE_NAME = "easy-scan-local-json-v1";
+const CACHE_NAME = "easy-scan-local-json-v2";
 const ASSETS = [
   "./",
   "./index.html",
