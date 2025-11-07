@@ -61,10 +61,10 @@ loaderText.textContent = "Loading... 100%";
 
 setTimeout(() => {
   document.getElementById("result").innerHTML =
-    '<div style="text-align:center;color:var(--text-color,#FFD700);font-weight:500;margin-top:20px;letter-spacing:0.5px;">Ready to search items</div>';
+    '<div style="text-align:center;color:var(--text-color,#FFD700);font-weight:600;margin-top:20px;letter-spacing:0.5px;">Ready to search items</div>';
 }, 400);
     document.getElementById("result").innerHTML =
-      '<div style="text-align:center;color:var(--text-color,#FFD700);font-weight:500;margin-top:20px;letter-spacing:0.5px;">Ready to search items</div>';
+      '<div style="text-align:center;color:var(--text-color,#FFD700);font-weight:600;margin-top:20px;letter-spacing:0.5px;">Ready to search items</div>';
   })
   .catch((err) => {
     console.error("Failed to load sheet:", err);
@@ -76,9 +76,9 @@ loaderText.textContent = "Error!";
     
     document.getElementById("result").innerHTML = `
       <div style="
-        color: var(--text-color, #FFD700);
+        color: var(--text-colorj, #FFD700);
         text-align: center;
-        font-weight: 500;
+        font-weight: 600;
         margin-top: 20px;
         letter-spacing: 0.5px;
       ">
@@ -135,7 +135,7 @@ function onSearchInput(e) {
       <div style="
         color: var(--text-color, #FFD700);
         text-align: center;
-        font-weight: 500;
+        font-weight: 600;
         margin-top: 20px;
         letter-spacing: 0.5px;
         font-size: 1rem;
