@@ -45,11 +45,31 @@ main {
 
 #searchBox {
   width: 100%;
-  padding: 12px;
+  padding: 14px 18px;
   font-size: 18px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  box-sizing: border-box;
+  border: none;
+  border-radius: 14px;
+  outline: none;
+
+  /* GLASS EFFECT */
+  background: rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(18px) saturate(180%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+
+  /* Border like iOS glass */
+  border: 1px solid rgba(255, 255, 255, 0.25);
+
+  /* Text color */
+  color: var(--text-color);
+
+  /* iOS smooth shadow */
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+
+  transition: 0.3s ease;
+}
+
+#searchBox::placeholder {
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .overlay {
@@ -248,4 +268,13 @@ html[data-theme="dark"] #result {
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 0.8; }
+}
+html[data-theme="dark"] #searchBox {
+  background: rgba(40, 40, 40, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: white;
+}
+
+html[data-theme="dark"] #searchBox::placeholder {
+  color: rgba(255, 255, 255, 0.45);
 }
