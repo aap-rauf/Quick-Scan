@@ -1,4 +1,4 @@
-const CACHE_NAME = "easy-scan-cache-v2";
+const CACHE_NAME = "easy-scan-cache-v3";
 const assetsToCache = [
   "./",
   "index.html",
