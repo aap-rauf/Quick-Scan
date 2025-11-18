@@ -1,13 +1,16 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
   <title>Easy Scan</title>
 
+  <!-- Manifest -->
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#FFD700">
+  <meta name="theme-color" content="#FFD700"/>
 
+  <!-- Icons -->
   <link rel="icon" href="icons/icon-192.png" sizes="192x192">
   <link rel="apple-touch-icon" href="icons/icon-512.png">
 
@@ -15,30 +18,42 @@
 </head>
 
 <body>
+
+  <!-- Signature (fixed position) -->
   <div id="signature">Rauf..</div>
 
+  <!-- Header -->
   <header>
     <h1>Easy Scan</h1>
     <button id="themeToggle" aria-label="Toggle theme">🌙</button>
   </header>
 
+  <!-- Main Content -->
   <main>
-    <div id="result"></div>
 
-    <input 
-      id="searchBox"
+    <!-- SEARCH BAR ALWAYS FIRST -->
+    <input
       type="text"
+      id="searchBox"
       placeholder="Enter last 6-7 digits or SKU"
       autocomplete="off"
-    >
+    />
+
+    <!-- RESULTS BELOW SEARCH BAR -->
+    <div id="result" role="region" aria-live="polite"></div>
+
   </main>
 
   <script src="script.js"></script>
+
+  <!-- Service Worker -->
   <script>
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("service-worker.js")
-        .catch(err => console.warn("SW error:", err));
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js')
+        .then(() => console.log("Service Worker Registered"))
+        .catch(err => console.warn("SW failed", err));
     }
   </script>
+
 </body>
 </html>
