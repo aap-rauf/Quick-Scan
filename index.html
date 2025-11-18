@@ -13,42 +13,39 @@
 
   <link rel="stylesheet" href="style.css" />
 </head>
-
 <body>
-
-  <!-- HEADER -->
   <header>
     <h1>Easy Scan</h1>
     <button id="themeToggle" aria-label="Toggle theme">🌙</button>
   </header>
 
-  <!-- SEARCH BAR ALWAYS UNDER HEADER -->
   <main>
+    <!-- search bar MUST be here (directly under header) -->
+    <div class="search-wrap">
+      <input
+        type="text"
+        id="searchBox"
+        placeholder="Enter last 6-7 digits or SKU"
+        autocomplete="off"
+        aria-label="Search"
+      />
+    </div>
 
-    <input
-      type="text"
-      id="searchBox"
-      placeholder="Enter last 6-7 digits or SKU"
-      autocomplete="off"
-    />
-
-    <!-- RESULT AREA UNDER SEARCH BAR -->
+    <!-- result area (loader will be injected here) -->
     <div id="result" role="region" aria-live="polite"></div>
-
   </main>
 
-  <!-- SIGNATURE FIXED AT BOTTOM RIGHT -->
   <div id="signature">Rauf..</div>
 
+  <!-- load script at end -->
   <script src="script.js"></script>
-
   <script>
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("service-worker.js")
-        .then(() => console.log("Service Worker registered"))
-        .catch(e => console.warn("SW register failed", e));
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker
+        .register('service-worker.js')
+        .then(() => console.log('Service Worker registered'))
+        .catch(e => console.warn('SW register failed', e));
     }
   </script>
-
 </body>
 </html>
