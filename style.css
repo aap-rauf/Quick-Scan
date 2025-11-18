@@ -1,144 +1,137 @@
-/* ---------- THEME COLORS ---------- */
-:root {
-  --gold: #FFD700;
-
-  --light-bg: #ffffff;
-  --light-text: #333;
-
-  --dark-bg: #121212;
-  --dark-text: #f0f0f0;
-
-  /* Signature */
-  --signature-color: var(--gold);
+:root{
+  --color-accent:#FFD700;
+  --bg-light:#ffffff;
+  --bg-dark:#121212;
+  --text-light:#333333;
+  --text-dark:#f0f0f0;
 }
 
-/* Light */
-html[data-theme="light"] {
-  background: var(--light-bg);
-  color: var(--light-text);
+/* theme */
+html[data-theme="light"]{ background:var(--bg-light); color:var(--text-light); }
+html[data-theme="dark"]{ background:var(--bg-dark); color:var(--text-dark); }
+
+*{ box-sizing: border-box; }
+body{ margin:0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial; padding:18px; }
+
+/* header */
+header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+header h1{
+  margin:0; font-size:20px; color:var(--color-accent);
+  font-weight:700;
 }
 
-/* Dark */
-html[data-theme="dark"] {
-  background: var(--dark-bg);
-  color: var(--dark-text);
+/* search wrap (always under header) */
+.search-wrap{
+  margin-top:16px;
+}
+#searchBox{
+  width:100%;
+  height:46px;
+  padding:10px 14px 10px 44px;
+  font-size:16px;
+  border-radius:12px;
+  border:1px solid rgba(0,0,0,0.08);
+  background: rgba(255,255,255,0.6);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+  background-clip: padding-box;
+  position: relative;
+  outline: none;
 }
 
-/* ---------- LAYOUT ---------- */
-body {
-  margin: 0;
-  padding: 20px;
-  font-family: Arial, sans-serif;
+/* gold tinted search icon inside input (using pseudo-element on wrapper) */
+.search-wrap{
+  position:relative;
+}
+.search-wrap::before{
+  content: "🔍";
+  position:absolute;
+  left:14px;
+  top:50%;
+  transform:translateY(-50%);
+  font-size:18px;
+  color:var(--color-accent);
+  pointer-events:none;
 }
 
-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+/* result area (below search) */
+#result{
+  margin-top:18px;
+  width:100%;
+  max-width:900px;
 }
 
-h1 {
-  margin: 0;
-  color: var(--gold);
+/* card */
+.card{
+  background: var(--card-bg, #fff);
+  color: inherit;
+  padding:18px;
+  border-radius:12px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.08);
 }
 
-button {
-  background: none;
-  border: none;
-  font-size: 22px;
-  cursor: pointer;
+/* loader bar styling */
+.loader-container{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  margin:36px auto;
+  width:100%;
 }
-
-/* ---------- SEARCH BAR ---------- */
-#searchBox {
-  width: 100%;
-  padding: 12px;
-  margin-top: 18px;
-  font-size: 18px;
-  border-radius: 10px;
-
-  backdrop-filter: blur(25px);
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-
-  color: var(--dark-text);
-}
-
-html[data-theme="dark"] #searchBox {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--light-text);
-}
-
-/* ---------- CARD ---------- */
-.card {
-  margin: 20px auto;
-  padding: 20px;
-  max-width: 650px;
-
-  background: rgba(255, 255, 255, 0.08);
+.loader-bar{
+  width: 92%;
+  max-width:560px;
+  height:14px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.06), rgba(0,0,0,0.03));
   border-radius: 12px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+  overflow:hidden;
+  position:relative;
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.03);
+}
+/* striped animated fill */
+.loader-fill{
+  height:100%;
+  width:0%;
+  border-radius:12px;
+  background: linear-gradient(135deg, rgba(255,215,0,0.95) 0%, rgba(255,200,0,0.95) 50%, rgba(255,215,0,0.95) 100%);
+  background-size: 40px 14px;
+  animation: stripe-move 1s linear infinite;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  transition: width 260ms linear;
+}
+@keyframes stripe-move {
+  0% { background-position: 0 0; }
+  100% { background-position: 40px 0; }
 }
 
-/* ---------- BARCODE IMAGE ---------- */
-.barcode-img {
-  display: flex;
-  justify-content: center;
-  margin-top: 12px;
+.loader-text{
+  margin-top:10px;
+  color:var(--color-accent);
+  font-weight:600;
 }
 
-.barcode-img img {
-  max-width: 100%;
-}
-
-/* ---------- LOADING BAR ---------- */
-.loader-container {
-  margin-top: 60px;
-  text-align: center;
-}
-
-.loader-bar {
-  width: 260px;
-  height: 12px;
-
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 6px;
-  overflow: hidden;
-  margin: auto;
-}
-
-.loader-fill {
-  width: 0%;
-  height: 100%;
-  background: var(--gold);
-  transition: width 0.25s ease;
-}
-
-.loader-text {
-  margin-top: 12px;
-  color: var(--gold);
-  font-weight: 600;
-  font-size: 18px;
-}
-
-/* ---------- SIGNATURE ---------- */
-#signature {
-  position: fixed;
-  bottom: 14px;
-  right: 18px;
+/* signature bottom-right */
+#signature{
+  position:fixed;
+  right:16px;
+  bottom:12px;
   font-family: "Pacifico", cursive;
-  font-size: 20px;
-  color: var(--signature-color);
-  opacity: 0.8;
-  user-select: none;
+  color:var(--color-accent);
+  opacity:0.85;
+  pointer-events:none;
 }
 
-/* Fade in */
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 0.8; }
+/* adapt for dark theme */
+html[data-theme="dark"] #searchBox{
+  background: rgba(255,255,255,0.03);
+  border:1px solid rgba(255,255,255,0.04);
 }
-
-#signature {
-  animation: fadeIn 1s ease;
+html[data-theme="dark"] .loader-bar{
+  background: linear-gradient(90deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
 }
