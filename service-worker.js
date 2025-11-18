@@ -1,62 +1,48 @@
-const CACHE_NAME = "easy-scan-cache-v3";
-const assetsToCache = [
+const CACHE = "easy-scan-v4";
+
+const ASSETS = [
   "./",
-  "index.html",
-  "manifest.json",
-  "style.css",
-  "script.js",
-  "data_part_1.json",
-  "data_part_2.json",
-  "data_part_3.json",
-  "data_part_4.json",
-  "icons/icon-192.png",
-  "icons/icon-512.png"
+  "./index.html",
+  "./style.css",
+  "./script.js",
+  "./manifest.json",
+  "./icons/icon-192.png",
+  "./icons/icon-512.png"
 ];
 
-// Install: pre-cache all assets
-self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(assetsToCache))
-      .then(() => self.skipWaiting())
+self.addEventListener("install", e => {
+  e.waitUntil(
+    caches.open(CACHE).then(c => c.addAll(ASSETS))
   );
+  self.skipWaiting();
 });
 
-// Activate: clear old caches
-self.addEventListener("activate", (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.map((key) => {
-        if (key !== CACHE_NAME) {
-          return caches.delete(key);
-        }
-      }))
+self.addEventListener("activate", e => {
+  e.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(keys.map(key =>
+        key !== CACHE ? caches.delete(key) : null
+      ))
     )
   );
   self.clients.claim();
 });
 
-// Fetch: serve cached first, then network fallback
-self.addEventListener("fetch", (event) => {
-  const request = event.request;
+self.addEventListener("fetch", e => {
+  if (e.request.method !== "GET") return;
 
-  // Only handle GET requests
-  if (request.method !== "GET") return;
+  e.respondWith(
+    caches.match(e.request).then(cached => {
+      if (cached) return cached;
 
-  event.respondWith(
-    caches.match(request).then((cachedResponse) => {
-      if (cachedResponse) return cachedResponse;
+      return fetch(e.request).then(resp => {
+        if (!resp || resp.status !== 200) return resp;
+        const copy = resp.clone();
 
-      return fetch(request)
-        .then((networkResponse) => {
-          // cache dynamically fetched JSON
-          if (request.url.endsWith(".json")) {
-            const clonedResponse = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(request, clonedResponse));
-          }
-          return networkResponse;
-        })
-        .catch(() => caches.match("./index.html"));
+        caches.open(CACHE).then(c => c.put(e.request, copy));
+
+        return resp;
+      });
     })
   );
 });
