@@ -1,49 +1,43 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Easy Scan</title>
 
-  <link rel="manifest" href="manifest.json" />
-  <meta name="theme-color" content="#FFD700" />
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#FFD700">
 
-  <link rel="icon" href="icons/icon-192.png" sizes="192x192" />
-  <link rel="apple-touch-icon" href="icons/icon-512.png" />
+  <link rel="icon" href="icons/icon-192.png" sizes="192x192">
+  <link rel="apple-touch-icon" href="icons/icon-512.png">
 
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css">
 </head>
-  <div id="signature">Rauf..</div>
+
 <body>
+  <div id="signature">Rauf..</div>
+
   <header>
     <h1>Easy Scan</h1>
-    <div>
-      <button id="themeToggle" aria-label="Toggle theme">🌙</button>
-    </div>
+    <button id="themeToggle" aria-label="Toggle theme">🌙</button>
   </header>
 
   <main>
-    <div id="loading" class="loading" style="display: none;">
-  <div class="loading-spinner"></div>
-  <p class="loading-text">Loading...</p>
-</div>
-    <input
-      type="text"
+    <div id="result"></div>
+
+    <input 
       id="searchBox"
-      placeholder="Enter last 6‑7 digits or SKU"
+      type="text"
+      placeholder="Enter last 6-7 digits or SKU"
       autocomplete="off"
-    />
-    <div id="result" role="region" aria-live="polite"></div>
+    >
   </main>
 
   <script src="script.js"></script>
   <script>
-    // register service worker
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker
-        .register('service-worker.js')
-        .then(() => console.log('Service Worker registered'))
-        .catch(e => console.warn('SW register failed', e));
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("service-worker.js")
+        .catch(err => console.warn("SW error:", err));
     }
   </script>
 </body>
