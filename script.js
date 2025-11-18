@@ -1,18 +1,18 @@
-// URL to fetch your sheet as JSON
+/* ---------- CONFIG ---------- */
 const SHEET_URL =
   "https://docs.google.com/spreadsheets/d/1vtZ2Xmb4eKPFs_v-D-nVNAm2_d2TtqqaMFO93TtaKxM/gviz/tq?tqx=out:json";
 
 let data = [];
-let dataReady = false;
-let loadFailed = false; // <--- added to prevent typing after load fails
+let loaded = false;
+let loadError = false;
 
-// show loader with progress bar
+/* ---------- INITIAL LOADER ---------- */
 document.getElementById("result").innerHTML = `
   <div class="loader-container">
     <div class="loader-bar">
-      <div class="loader-fill" id="loaderFill" style="width:0%"></div>
+      <div id="loaderFill" class="loader-fill"></div>
     </div>
-    <div class="loader-text" id="loaderText">Loading... 0%</div>
+    <div id="loaderText" class="loader-text">Loading... 0%</div>
   </div>
 `;
 
@@ -20,203 +20,143 @@ let progress = 0;
 const loaderFill = document.getElementById("loaderFill");
 const loaderText = document.getElementById("loaderText");
 
-// Simulate progress until data loads
-const progressInterval = setInterval(() => {
-  if (progress < 90) { // stops at 90% until fetch finishes
-    progress += Math.random() * 5; // speed variation
-    loaderFill.style.width = `${progress}%`;
+const progressTimer = setInterval(() => {
+  if (progress < 90) {
+    progress += Math.random() * 6;
+    loaderFill.style.width = progress + "%";
     loaderText.textContent = `Loading... ${Math.floor(progress)}%`;
   }
-}, 150);
+}, 140);
 
-// load sheet data
+/* ---------- FETCH DATA ---------- */
 fetch(SHEET_URL)
-  .then((res) => res.text())
-  .then((txt) => {
-    const json = JSON.parse(txt.substr(47).slice(0, -2));
-    data = json.table.rows.map((r) => {
-      const skuOriginal = r.c[0]?.v || "";
-      const nameOriginal = r.c[1]?.v || "";
-      const barcodeCell = (r.c[2]?.v || "").trim();
-      const barcodeList = barcodeCell
+  .then(res => res.text())
+  .then(raw => {
+    const json = JSON.parse(raw.substring(47).slice(0, -2));
+
+    data = json.table.rows.map(r => {
+      const sku = r.c[0]?.v || "";
+      const name = r.c[1]?.v || "";
+      const barcodes = (r.c[2]?.v || "")
         .split(",")
-        .map((b) => b.trim())
-        .filter((b) => b);
+        .map(b => b.trim())
+        .filter(Boolean);
 
       return {
-        sku: skuOriginal,
-        name: nameOriginal,
-        barcodes: barcodeList,
-        primaryBarcode: barcodeList[0] || "",
-        searchSku: skuOriginal.toLowerCase(),
-        searchBarcodes: barcodeList.map((b) => b.toLowerCase()),
+        sku,
+        name,
+        barcodes,
+        primary: barcodes[0] || "",
+        searchSku: sku.toLowerCase(),
+        searchBarcodes: barcodes.map(b => b.toLowerCase()),
       };
     });
 
-    console.log("Loaded", data.length, "rows");
-    dataReady = true;
-    clearInterval(progressInterval);
-loaderFill.style.width = "100%";
-loaderText.textContent = "Loading... 100%";
+    clearInterval(progressTimer);
 
-setTimeout(() => {
-  document.getElementById("result").innerHTML =
-    '<div style="text-align:center;color:var(--text-color,#FFD700);font-weight:600;margin-top:20px;letter-spacing:0.5px;">Ready to search items</div>';
-}, 400);
-    document.getElementById("result").innerHTML =
-      '<div style="text-align:center;color:var(--text-color,#FFD700);font-weight:600;margin-top:20px;letter-spacing:0.5px;">Ready to search items</div>';
+    loaderFill.style.width = "100%";
+    loaderText.textContent = "Loading... 100%";
+
+    setTimeout(() => {
+      document.getElementById("result").innerHTML = `
+        <div style="text-align:center;color:${loaderText.style.color};
+        font-weight:600;margin-top:20px;">Ready to search items</div>`;
+    }, 300);
+
+    loaded = true;
   })
-  .catch((err) => {
-    console.error("Failed to load sheet:", err);
-    loadFailed = true; // mark as failed
-    
-    clearInterval(progressInterval);
-loaderFill.style.width = "100%";
-loaderText.textContent = "Error!";
-    
+  .catch(err => {
+    console.error("Load error:", err);
+    loadError = true;
+    clearInterval(progressTimer);
+
+    loaderFill.style.width = "100%";
+    loaderText.textContent = "Error!";
+
     document.getElementById("result").innerHTML = `
-      <div style="
-        color: var(--text-colorj, #FFD700);
-        text-align: center;
-        font-weight: 600;
-        margin-top: 20px;
-        letter-spacing: 0.5px;
-      ">
-        Unable to load.<br>
-        Please check your internet connection.<br><br>
+      <div style="text-align:center;color:var(--gold);font-weight:600;margin-top:20px;">
+        Unable to load data.<br><br>
         <button id="reloadBtn" style="
-          background: transparent;
-          border: 1px solid var(--text-color, #FFD700);
-          color: var(--text-color, #FFD700);
-          border-radius: 8px;
-          padding: 8px 16px;
-          font-size: 15px;
-          font-weight: 500;
-          cursor: pointer;
-          transition: 0.3s;
-        ">⟳ Reload</button>
+          padding:8px 16px;border-radius:8px;background:none;
+          border:1px solid var(--gold);color:var(--gold);cursor:pointer;">
+          Reload
+        </button>
       </div>
     `;
 
-    const reloadBtn = document.getElementById("reloadBtn");
-    if (reloadBtn) {
-      reloadBtn.addEventListener("click", () => {
-        document.getElementById("result").innerHTML = `
-          <div class="loader-container">
-            <div class="loader"></div>
-            <div class="loader-text">Reloading...</div>
-          </div>`;
-        location.reload();
-      });
-    }
+    document.getElementById("reloadBtn").onclick = () => location.reload();
   });
 
-// live search
-document.getElementById("searchBox").addEventListener("input", onSearchInput);
-
-function onSearchInput(e) {
-  if (loadFailed) return; // <--- do nothing if load failed
-  if (!dataReady) return; // <--- removed the “Please wait” screen
+/* ---------- SEARCH ---------- */
+document.getElementById("searchBox").addEventListener("input", (e) => {
+  if (!loaded || loadError) return;
 
   const q = e.target.value.trim().toLowerCase();
-  if (!q) {
-    document.getElementById("result").innerHTML = "";
+  if (q === "") return (document.getElementById("result").innerHTML = "");
+
+  const results = data.filter(item =>
+    item.searchSku.endsWith(q) ||
+    item.searchBarcodes.some(b => b.endsWith(q))
+  );
+
+  if (!results.length) {
+    document.getElementById("result").innerHTML = `
+      <div style="text-align:center;color:var(--gold);font-weight:600;margin-top:20px;">
+        No matching item found
+      </div>`;
     return;
   }
 
-  const results = data.filter(
-    (item) =>
-      item.searchBarcodes.some((b) => b.endsWith(q)) ||
-      item.searchSku.endsWith(q)
-  );
+  const item = results[0];
 
-  if (results.length === 0) {
-    document.getElementById("result").innerHTML = `
-      <div style="
-        color: var(--text-color, #FFD700);
-        text-align: center;
-        font-weight: 600;
-        margin-top: 20px;
-        letter-spacing: 0.5px;
-        font-size: 1rem;
-      ">
-        No matching item found
-      </div>
-    `;
-  } else {
-    const item = results[0];
-    const barcodeDisplay =
-      item.barcodes.length > 1
-        ? `${item.barcodes[0]} <span class='more'>…</span>`
-        : item.barcodes[0];
+  const bar = item.barcodes.length > 1
+    ? `${item.barcodes[0]} <span class="more">…</span>`
+    : item.barcodes[0];
 
-    document.getElementById("result").innerHTML = `
-      <div class="card">
-        <strong>${escapeHtml(item.name)}</strong><br>
-        SKU: ${escapeHtml(item.sku)}<br>
-        Barcodes: <span class="barcode-list">${barcodeDisplay}</span><br><br>
-        <div class="barcode-img">
-          <img src="https://barcodeapi.org/api/code128/${encodeURIComponent(
-            item.primaryBarcode
-          )}" alt="Barcode" />
-        </div>
-      </div>
-    `;
+  document.getElementById("result").innerHTML = `
+    <div class="card">
+      <strong>${escape(item.name)}</strong><br>
+      SKU: ${escape(item.sku)}<br>
+      Barcodes: <span class="barcode-list">${bar}</span>
 
-    const more = document.querySelector(".more");
-    if (more) {
-      more.addEventListener("click", () => {
-        document.querySelector(".barcode-list").innerText =
-          item.barcodes.join(", ");
-      });
-    }
-  }
-}
-
-function showFullDetails(item) {
-  const allBarcodes = item.barcodes.join(", ");
-  const resultDiv = document.getElementById("result");
-  const overlay = document.createElement("div");
-  overlay.className = "overlay";
-  overlay.innerHTML = `
-    <div class="card expanded">
-      <strong>${escapeHtml(item.name)}</strong><br>
-      SKU: ${escapeHtml(item.sku)}<br>
-      Barcodes: ${escapeHtml(allBarcodes)}<br><br>
       <div class="barcode-img">
         <img src="https://barcodeapi.org/api/code128/${encodeURIComponent(
-          item.primaryBarcode
-        )}" alt="Barcode" />
+          item.primary
+        )}">
       </div>
     </div>
   `;
-  resultDiv.appendChild(overlay);
-  overlay.addEventListener("click", (e) => {
-    if (e.target === overlay) overlay.remove();
-  });
+
+  const more = document.querySelector(".more");
+  if (more) {
+    more.onclick = () => {
+      document.querySelector(".barcode-list").innerText =
+        item.barcodes.join(", ");
+    };
+  }
+});
+
+/* ---------- UTIL ---------- */
+function escape(s) {
+  return String(s || "").replace(/[&<>"]/g, c => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;"
+  }[c]));
 }
 
-function escapeHtml(s) {
-  return String(s || "").replace(/[&<>"']/g, (m) => {
-    return (
-      { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[
-        m
-      ] || m
-    );
-  });
-}
-
-// Dark / Light theme toggle with memory
+/* ---------- THEME ---------- */
 const themeToggle = document.getElementById("themeToggle");
 const html = document.documentElement;
-const savedTheme = localStorage.getItem("theme") || "light";
-html.setAttribute("data-theme", savedTheme);
-themeToggle.textContent = savedTheme === "light" ? "🌙" : "☀️";
 
-themeToggle.addEventListener("click", () => {
-  const current = html.getAttribute("data-theme") || "light";
-  const next = current === "light" ? "dark" : "light";
-  html.setAttribute("data-theme", next);
-  localStorage.setItem("theme", next);
-  themeToggle.textContent = next === "light" ? "🌙" : "☀️";
-});
+const saved = localStorage.getItem("theme") || "light";
+html.setAttribute("data-theme", saved);
+themeToggle.textContent = saved === "light" ? "🌙" : "☀️";
+
+themeToggle.onclick = () => {
+  const now = html.dataset.theme === "light" ? "dark" : "light";
+  html.dataset.theme = now;
+  themeToggle.textContent = now === "light" ? "🌙" : "☀️";
+  localStorage.setItem("theme", now);
+};
