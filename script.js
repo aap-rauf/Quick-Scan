@@ -145,10 +145,10 @@ document.addEventListener("DOMContentLoaded", () => {
       JsBarcode(barcodeSvg, item.primaryBarcode, {
         format: "code128",
         lineColor: "#000",
-        width: 2.2,
-        height: 100,
+        width: 2.4,
+        height: 110,
         displayValue: false,
-        margin: 10
+        margin: 8
       });
     }
   });
