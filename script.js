@@ -6,19 +6,15 @@ let data = [];
 let dataReady = false;
 let loadFailed = false;
 let progressInterval;
+let loaderFill, loaderText, resultEl, searchBox, themeToggle;
 
-document.addEventListener("DOMContentLoaded", () => {
-  const resultEl = document.getElementById("result");
-  const searchBox = document.getElementById("searchBox");
-  const themeToggle = document.getElementById("themeToggle");
-  const reloadData = document.getElementById("reloadData");
+// ===============================================================
+// FUNCTION: Load Google Sheet Data (used on startup + header tap)
+// ===============================================================
+function loadSheetData() {
+  dataReady = false;
+  loadFailed = false;
 
-  reloadData.addEventListener("click", (e) => {
-  e.preventDefault();
-  e.stopPropagation();
-  loadSheetData();   // reload the sheet data ONLY (no page refresh)
-});
-  
   // Loader UI
   resultEl.innerHTML = `
     <div class="loader-container" aria-hidden="false">
@@ -26,11 +22,13 @@ document.addEventListener("DOMContentLoaded", () => {
       <div id="loaderText" class="loader-text">Loading... 0%</div>
     </div>
   `;
-  const loaderFill = document.getElementById("loaderFill");
-  const loaderText = document.getElementById("loaderText");
 
-  // Fake progress
+  loaderFill = document.getElementById("loaderFill");
+  loaderText = document.getElementById("loaderText");
+
+  // Fake loading % animation
   let progress = 0;
+  clearInterval(progressInterval);
   progressInterval = setInterval(() => {
     if (progress < 92) {
       progress = Math.min(92, progress + Math.random() * 6);
@@ -39,8 +37,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }, 140);
 
-  // Fetch Sheet
-  fetch(SHEET_URL)
+  // Fetch sheet ------------------------------
+  fetch(SHEET_URL, { cache: "no-store" })   // ⬅️ IMPORTANT: skip browser cache
     .then(res => res.text())
     .then(txt => {
       const json = JSON.parse(txt.substr(47).slice(0, -2));
@@ -49,7 +47,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const skuOriginal = r.c[0]?.v || "";
         const nameOriginal = r.c[1]?.v || "";
         const barcodeCell = (r.c[2]?.v || "").toString().trim();
-        const barcodeList = barcodeCell ? barcodeCell.split(",").map(b => b.trim()).filter(Boolean) : [];
+        const barcodeList = barcodeCell
+          ? barcodeCell.split(",").map(b => b.trim()).filter(Boolean)
+          : [];
 
         return {
           sku: skuOriginal,
@@ -61,26 +61,29 @@ document.addEventListener("DOMContentLoaded", () => {
         };
       });
 
+      // Finish loader
       clearInterval(progressInterval);
       loaderFill.style.width = "100%";
       loaderText.textContent = "Loading... 100%";
       dataReady = true;
 
       setTimeout(() => {
-        resultEl.innerHTML = `<div style="text-align:center;color:var(--color-accent);font-weight:600;margin-top:8px;">Ready to Search Items</div>`;
-      }, 260);
+        resultEl.innerHTML =
+          `<div style="text-align:center;color:var(--color-accent);font-weight:600;margin-top:8px;">Sheet Updated ✓</div>`;
+      }, 200);
     })
     .catch(err => {
-      console.error("Failed to load sheet:", err);
+      console.error("Failed:", err);
+
       clearInterval(progressInterval);
       loadFailed = true;
       loaderFill.style.width = "100%";
       loaderText.textContent = "Error!";
+
       resultEl.innerHTML = `
         <div style="text-align:center;color:var(--color-accent);font-weight:600;margin-top:8px;">
-          Unable to load.<br>
-          Please check your internet connection.<br><br>
-          <button id="reloadBtn" style="
+          Unable to load.<br>Check internet.<br><br>
+          <button id="retrySheet" style="
             background: transparent;
             border: 1px solid var(--color-accent);
             color: var(--color-accent);
@@ -89,15 +92,32 @@ document.addEventListener("DOMContentLoaded", () => {
             font-size: 15px;
             font-weight: 600;
             cursor: pointer;
-            transition: 0.2s;
-          ">⟳ Reload</button>
+          ">⟳ Retry</button>
         </div>
       `;
-      const reloadBtn = document.getElementById("reloadBtn");
-      if (reloadBtn) reloadBtn.addEventListener("click", () => location.reload());
-    });
 
-  // SEARCH =====================================================================
+      document.getElementById("retrySheet")
+        .addEventListener("click", loadSheetData);
+    });
+}
+
+// ===============================================================
+// INIT APP
+// ===============================================================
+document.addEventListener("DOMContentLoaded", () => {
+  resultEl = document.getElementById("result");
+  searchBox = document.getElementById("searchBox");
+  themeToggle = document.getElementById("themeToggle");
+
+  // Load sheet immediately on startup
+  loadSheetData();
+
+  // Tap header to reload sheet (NOT whole app)
+  document.getElementById("reloadData").addEventListener("click", () => {
+    loadSheetData();
+  });
+
+  // SEARCH -------------------------------------------------------
   searchBox.addEventListener("input", (e) => {
     if (loadFailed || !dataReady) return;
 
@@ -113,10 +133,8 @@ document.addEventListener("DOMContentLoaded", () => {
     );
 
     if (results.length === 0) {
-      resultEl.innerHTML = `
-        <div style="text-align:center;color:var(--color-accent);font-weight:600;margin-top:8px;">
-          No matching item found
-        </div>`;
+      resultEl.innerHTML =
+        `<div style="text-align:center;color:var(--color-accent);font-weight:600;margin-top:8px;">No matching item found</div>`;
       return;
     }
 
@@ -131,22 +149,18 @@ document.addEventListener("DOMContentLoaded", () => {
         <strong>${escapeHtml(item.name)}</strong><br>
         SKU: ${escapeHtml(item.sku)}<br>
         Barcodes: <span class="barcode-list">${barcodeDisplay}</span><br><br>
-        <div class="barcode-img">
-          <svg id="barcodeSvg"></svg>
-        </div>
+        <div class="barcode-img"><svg id="barcodeSvg"></svg></div>
       </div>
     `;
 
-    // CLICK TO EXPAND ALL BARCODES
     const more = document.querySelector(".more");
-    if (more) {
-      more.addEventListener("click", () => {
-        const list = document.querySelector(".barcode-list");
-        if (list) list.innerText = item.barcodes.join(", ");
-      });
-    }
+    if (more)
+      more.addEventListener("click", () =>
+        (document.querySelector(".barcode-list").innerText =
+          item.barcodes.join(", "))
+      );
 
-    // LOCAL BARCODE GENERATION (OFFLINE)
+    // Offline Barcode Generator
     const barcodeSvg = document.getElementById("barcodeSvg");
     if (barcodeSvg && item.primaryBarcode) {
       JsBarcode(barcodeSvg, item.primaryBarcode, {
@@ -160,7 +174,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // THEME TOGGLE ===============================================================
+  // THEME --------------------------------------------------------
   themeToggle.addEventListener("click", () => {
     const html = document.documentElement;
     const current = html.getAttribute("data-theme");
@@ -170,21 +184,19 @@ document.addEventListener("DOMContentLoaded", () => {
     themeToggle.textContent = next === "light" ? "🌙" : "☀️";
   });
 
-  // RESTORE THEME
+  // RESTORE SAVED THEME
   const savedTheme = localStorage.getItem("theme") || "light";
   document.documentElement.setAttribute("data-theme", savedTheme);
   themeToggle.textContent = savedTheme === "light" ? "🌙" : "☀️";
 });
 
-// Escape HTML
+// HTML escape helper
 function escapeHtml(s) {
-  return String(s || "").replace(/[&<>"']/g, function (m) {
-    return ({
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;",
-      "'": "&#39;"
-    }[m] || m);
-  });
+  return String(s || "").replace(/[&<>"']/g, (m) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  }[m]));
 }
