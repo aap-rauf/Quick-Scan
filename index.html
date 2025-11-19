@@ -12,7 +12,11 @@
   <link rel="apple-touch-icon" href="icons/icon-512.png" />
 
   <link rel="stylesheet" href="style.css" />
+
+  <!--Add JsBarcode for offline barcode generation -->
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
 </head>
+
 <body>
   <header>
     <h1>Easy Scan</h1>
@@ -20,7 +24,7 @@
   </header>
 
   <main>
-    <!-- search bar MUST be here (directly under header) -->
+    <!-- Search bar directly under header -->
     <div class="search-wrap">
       <input
         type="text"
@@ -31,14 +35,16 @@
       />
     </div>
 
-    <!-- result area (loader will be injected here) -->
+    <!-- Result area (loader + cards appear here) -->
     <div id="result" role="region" aria-live="polite"></div>
   </main>
 
   <div id="signature">Rauf..</div>
 
-  <!-- load script at end -->
+  <!-- Main script -->
   <script src="script.js"></script>
+
+  <!-- Service worker -->
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker
