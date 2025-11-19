@@ -12,7 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const searchBox = document.getElementById("searchBox");
   const themeToggle = document.getElementById("themeToggle");
 
-  // 1) inject loader into result (so search remains above)
+  // Loader UI
   resultEl.innerHTML = `
     <div class="loader-container" aria-hidden="false">
       <div class="loader-bar"><div id="loaderFill" class="loader-fill" style="width:0%"></div></div>
@@ -22,7 +22,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const loaderFill = document.getElementById("loaderFill");
   const loaderText = document.getElementById("loaderText");
 
-  // fake progress while loading (stops at 92% until fetch resolves)
+  // Fake progress
   let progress = 0;
   progressInterval = setInterval(() => {
     if (progress < 92) {
@@ -32,12 +32,12 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }, 140);
 
-  // fetch sheet JSON
+  // Fetch Sheet
   fetch(SHEET_URL)
     .then(res => res.text())
     .then(txt => {
-      // parse gviz response
       const json = JSON.parse(txt.substr(47).slice(0, -2));
+
       data = json.table.rows.map((r) => {
         const skuOriginal = r.c[0]?.v || "";
         const nameOriginal = r.c[1]?.v || "";
@@ -59,7 +59,6 @@ document.addEventListener("DOMContentLoaded", () => {
       loaderText.textContent = "Loading... 100%";
       dataReady = true;
 
-      // show ready message briefly then clear (so results area is clean)
       setTimeout(() => {
         resultEl.innerHTML = `<div style="text-align:center;color:var(--color-accent);font-weight:600;margin-top:8px;">Ready to search items</div>`;
       }, 260);
@@ -91,14 +90,13 @@ document.addEventListener("DOMContentLoaded", () => {
       if (reloadBtn) reloadBtn.addEventListener("click", () => location.reload());
     });
 
-  // search handler
+  // SEARCH =====================================================================
   searchBox.addEventListener("input", (e) => {
-    if (loadFailed) return;      // don't change result if load failed
-    if (!dataReady) return;      // ignore until data loaded
+    if (loadFailed || !dataReady) return;
 
     const q = e.target.value.trim().toLowerCase();
     if (!q) {
-      resultEl.innerHTML = "";   // clear results when empty
+      resultEl.innerHTML = "";
       return;
     }
 
@@ -108,12 +106,18 @@ document.addEventListener("DOMContentLoaded", () => {
     );
 
     if (results.length === 0) {
-      resultEl.innerHTML = `<div style="text-align:center;color:var(--color-accent);font-weight:600;margin-top:8px;">No matching item found</div>`;
+      resultEl.innerHTML = `
+        <div style="text-align:center;color:var(--color-accent);font-weight:600;margin-top:8px;">
+          No matching item found
+        </div>`;
       return;
     }
 
     const item = results[0];
-    const barcodeDisplay = item.barcodes.length > 1 ? `${item.barcodes[0]} <span class='more'>…</span>` : item.barcodes[0];
+    const barcodeDisplay =
+      item.barcodes.length > 1
+        ? `${item.barcodes[0]} <span class='more'>…</span>`
+        : item.barcodes[0];
 
     resultEl.innerHTML = `
       <div class="card">
@@ -121,37 +125,59 @@ document.addEventListener("DOMContentLoaded", () => {
         SKU: ${escapeHtml(item.sku)}<br>
         Barcodes: <span class="barcode-list">${barcodeDisplay}</span><br><br>
         <div class="barcode-img">
-          <img src="https://barcodeapi.org/api/code128/${encodeURIComponent(item.primaryBarcode)}" alt="Barcode" />
+          <svg id="barcodeSvg"></svg>
         </div>
       </div>
     `;
 
+    // CLICK TO EXPAND ALL BARCODES
     const more = document.querySelector(".more");
-    if (more) more.addEventListener("click", () => {
-      const list = document.querySelector(".barcode-list");
-      if (list) list.innerText = item.barcodes.join(", ");
-    });
+    if (more) {
+      more.addEventListener("click", () => {
+        const list = document.querySelector(".barcode-list");
+        if (list) list.innerText = item.barcodes.join(", ");
+      });
+    }
+
+    // LOCAL BARCODE GENERATION (OFFLINE)
+    const barcodeSvg = document.getElementById("barcodeSvg");
+    if (barcodeSvg && item.primaryBarcode) {
+      JsBarcode(barcodeSvg, item.primaryBarcode, {
+        format: "code128",
+        lineColor: "#000",
+        width: 2,
+        height: 70,
+        displayValue: false,
+        margin: 0
+      });
+    }
   });
 
-  // theme toggle
+  // THEME TOGGLE ===============================================================
   themeToggle.addEventListener("click", () => {
     const html = document.documentElement;
-    const current = html.getAttribute("data-theme") || "light";
+    const current = html.getAttribute("data-theme");
     const next = current === "light" ? "dark" : "light";
     html.setAttribute("data-theme", next);
     localStorage.setItem("theme", next);
     themeToggle.textContent = next === "light" ? "🌙" : "☀️";
   });
 
-  // restore theme
+  // RESTORE THEME
   const savedTheme = localStorage.getItem("theme") || "light";
   document.documentElement.setAttribute("data-theme", savedTheme);
   themeToggle.textContent = savedTheme === "light" ? "🌙" : "☀️";
 });
 
-// small helper
+// Escape HTML
 function escapeHtml(s) {
   return String(s || "").replace(/[&<>"']/g, function (m) {
-    return ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m] || m);
+    return ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#39;"
+    }[m] || m);
   });
 }
