@@ -146,7 +146,7 @@ document.addEventListener("DOMContentLoaded", () => {
         format: "code128",
         lineColor: "#000",
         width: 2,
-        height: 70,
+        height: 90,
         displayValue: false,
         margin: 0
       });
