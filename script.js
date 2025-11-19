@@ -12,6 +12,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const searchBox = document.getElementById("searchBox");
   const themeToggle = document.getElementById("themeToggle");
   const reloadData = document.getElementById("reloadData");
+
+  reloadData.addEventListener("click", () => {
+  location.reload();   // reloads PWA & fetches sheet again
+});
   
   // Loader UI
   resultEl.innerHTML = `
