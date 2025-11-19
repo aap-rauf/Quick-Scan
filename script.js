@@ -148,7 +148,7 @@ document.addEventListener("DOMContentLoaded", () => {
         width: 2.2,
         height: 100,
         displayValue: false,
-        margin: 0
+        margin: 10
       });
     }
   });
