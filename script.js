@@ -13,8 +13,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const themeToggle = document.getElementById("themeToggle");
   const reloadData = document.getElementById("reloadData");
 
-  reloadData.addEventListener("click", () => {
-  location.reload();   // reloads PWA & fetches sheet again
+  reloadData.addEventListener("click", (e) => {
+  e.preventDefault();
+  e.stopPropagation();
+  loadSheetData();   // reload the sheet data ONLY (no page refresh)
 });
   
   // Loader UI
