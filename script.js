@@ -11,7 +11,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const resultEl = document.getElementById("result");
   const searchBox = document.getElementById("searchBox");
   const themeToggle = document.getElementById("themeToggle");
-
+  const reloadData = document.getElementById("reloadData");
+  
   // Loader UI
   resultEl.innerHTML = `
     <div class="loader-container" aria-hidden="false">
