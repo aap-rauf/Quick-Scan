@@ -145,9 +145,9 @@ document.addEventListener("DOMContentLoaded", () => {
       JsBarcode(barcodeSvg, item.primaryBarcode, {
         format: "code128",
         lineColor: "#000",
-        width: 2,
+        width: auto,
         height: 100,
-        displayValue: false,
+        displayValue: true,
         margin: 0
       });
     }
