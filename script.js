@@ -60,7 +60,7 @@ document.addEventListener("DOMContentLoaded", () => {
       dataReady = true;
 
       setTimeout(() => {
-        resultEl.innerHTML = `<div style="text-align:center;color:var(--color-accent);font-weight:600;margin-top:8px;">Ready to search items</div>`;
+        resultEl.innerHTML = `<div style="text-align:center;color:var(--color-accent);font-weight:600;margin-top:8px;">Ready to Search Items</div>`;
       }, 260);
     })
     .catch(err => {
@@ -71,7 +71,7 @@ document.addEventListener("DOMContentLoaded", () => {
       loaderText.textContent = "Error!";
       resultEl.innerHTML = `
         <div style="text-align:center;color:var(--color-accent);font-weight:600;margin-top:8px;">
-          Unable to load data.<br>
+          Unable to load.<br>
           Please check your internet connection.<br><br>
           <button id="reloadBtn" style="
             background: transparent;
@@ -80,7 +80,7 @@ document.addEventListener("DOMContentLoaded", () => {
             border-radius: 8px;
             padding: 8px 16px;
             font-size: 15px;
-            font-weight: 500;
+            font-weight: 600;
             cursor: pointer;
             transition: 0.2s;
           ">⟳ Reload</button>
