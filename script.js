@@ -63,7 +63,7 @@ document.getElementById("refreshDataButton").addEventListener("click", () => {
       dataReady = true;
 
       setTimeout(() => {
-        resultEl.innerHTML = `<div style="text-align:center;color:var(--color-accent);font-weight:600;margin-top:8px;">Ready to Search Items</div>`;
+        resultEl.innerHTML = `<div style="text-align:center;color:var(--color-accent);font-weight:600;margin-top:8px;">Ready to Search</div>`;
       }, 260);
     })
     .catch(err => {
@@ -148,7 +148,7 @@ document.getElementById("refreshDataButton").addEventListener("click", () => {
       setTimeout(() => {
         resultEl.innerHTML = `
           <div style="text-align:center;color:var(--color-accent);font-weight:600;margin-top:8px;">
-            Sheet Updated — Ready to Search
+            Ready to Search
           </div>
         `;
       }, 260);
