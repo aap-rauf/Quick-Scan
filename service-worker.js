@@ -1,4 +1,4 @@
-const CACHE = "easy-scan-v101";
+const CACHE = "easy-scan-v7";
 
 const ASSETS = [
   "./",
@@ -6,6 +6,7 @@ const ASSETS = [
   "./style.css",
   "./script.js",
   "./manifest.json",
+  "./service-worker.js",
   "./icons/icon-192.png",
   "./icons/icon-512.png"
 ];
@@ -20,9 +21,9 @@ self.addEventListener("install", e => {
 self.addEventListener("activate", e => {
   e.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(keys.map(key =>
-        key !== CACHE ? caches.delete(key) : null
-      ))
+      Promise.all(
+        keys.map(key => (key !== CACHE ? caches.delete(key) : null))
+      )
     )
   );
   self.clients.claim();
@@ -31,18 +32,24 @@ self.addEventListener("activate", e => {
 self.addEventListener("fetch", e => {
   if (e.request.method !== "GET") return;
 
+  // Always fetch fresh index.html
+  if (e.request.url.endsWith("index.html")) {
+    return e.respondWith(fetch(e.request));
+  }
+
   e.respondWith(
     caches.match(e.request).then(cached => {
       if (cached) return cached;
 
-      return fetch(e.request).then(resp => {
-        if (!resp || resp.status !== 200) return resp;
-        const copy = resp.clone();
+      return fetch(e.request)
+        .then(resp => {
+          if (!resp || resp.status !== 200) return resp;
 
-        caches.open(CACHE).then(c => c.put(e.request, copy));
-
-        return resp;
-      });
+          const copy = resp.clone();
+          caches.open(CACHE).then(c => c.put(e.request, copy));
+          return resp;
+        })
+        .catch(() => cached);
     })
   );
 });
