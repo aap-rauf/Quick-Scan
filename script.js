@@ -12,9 +12,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const searchBox = document.getElementById("searchBox");
   const themeToggle = document.getElementById("themeToggle");
 
-document.getElementById("refreshDataButton").addEventListener("click", () => {
-  reloadSheetData();
-});
   // Loader UI
   resultEl.innerHTML = `
     <div class="loader-container" aria-hidden="false">
@@ -63,7 +60,7 @@ document.getElementById("refreshDataButton").addEventListener("click", () => {
       dataReady = true;
 
       setTimeout(() => {
-        resultEl.innerHTML = `<div style="text-align:center;color:var(--color-accent);font-weight:600;margin-top:8px;">Ready to Search</div>`;
+        resultEl.innerHTML = `<div style="text-align:center;color:var(--color-accent);font-weight:600;margin-top:8px;">Ready to Search Items</div>`;
       }, 260);
     })
     .catch(err => {
@@ -92,81 +89,6 @@ document.getElementById("refreshDataButton").addEventListener("click", () => {
       const reloadBtn = document.getElementById("reloadBtn");
       if (reloadBtn) reloadBtn.addEventListener("click", () => location.reload());
     });
-  function reloadSheetData() {
-  const resultEl = document.getElementById("result");
-
-  // Show loader again
-  resultEl.innerHTML = `
-    <div class="loader-container">
-      <div class="loader-bar">
-        <div id="loaderFill" class="loader-fill" style="width:0%"></div>
-      </div>
-      <div id="loaderText" class="loader-text">Refreshing... 0%</div>
-    </div>
-  `;
-
-  let loaderFill = document.getElementById("loaderFill");
-  let loaderText = document.getElementById("loaderText");
-
-  let progress = 0;
-  let interval = setInterval(() => {
-    if (progress < 92) {
-      progress += Math.random() * 6;
-      loaderFill.style.width = progress + "%";
-      loaderText.textContent = `Refreshing... ${Math.floor(progress)}%`;
-    }
-  }, 130);
-
-  // Fetch fresh data from Google Sheet
-  fetch(SHEET_URL + "&nocache=" + Date.now())  // prevent caching
-    .then(res => res.text())
-    .then(txt => {
-      const json = JSON.parse(txt.substr(47).slice(0, -2));
-
-      data = json.table.rows.map((r) => {
-        const skuOriginal = r.c[0]?.v || "";
-        const nameOriginal = r.c[1]?.v || "";
-        const barcodeCell = (r.c[2]?.v || "").toString().trim();
-        const barcodeList = barcodeCell
-          ? barcodeCell.split(",").map(b => b.trim()).filter(Boolean)
-          : [];
-
-        return {
-          sku: skuOriginal,
-          name: nameOriginal,
-          barcodes: barcodeList,
-          primaryBarcode: barcodeList[0] || "",
-          searchSku: skuOriginal.toLowerCase(),
-          searchBarcodes: barcodeList.map(b => b.toLowerCase()),
-        };
-      });
-
-      clearInterval(interval);
-      loaderFill.style.width = "100%";
-      loaderText.textContent = "Refreshing... 100%";
-
-      setTimeout(() => {
-        resultEl.innerHTML = `
-          <div style="text-align:center;color:var(--color-accent);font-weight:600;margin-top:8px;">
-            Ready to Search
-          </div>
-        `;
-      }, 260);
-    })
-    .catch(err => {
-  console.error("Refresh failed:", err);
-  resultEl.innerHTML = `
-    <div style="text-align:center;color:red;margin-top:8px;">
-      Failed to Refresh.
-    </div>
-  `;
-});
-
-  // Add click event for refresh button
-  const reloadBtn = document.getElementById("reloadBtn");
-  if (reloadBtn) reloadBtn.addEventListener("click", () => refreshData());
-});
-}
 
   // SEARCH =====================================================================
   searchBox.addEventListener("input", (e) => {
