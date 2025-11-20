@@ -1,4 +1,4 @@
-const CACHE = "easy-scan-v100";
+const CACHE = "easy-scan-v7";
 
 const ASSETS = [
   "./",
@@ -6,42 +6,48 @@ const ASSETS = [
   "./style.css",
   "./script.js",
   "./manifest.json",
+
+  // ✅ MAKE SURE THESE PATHS ARE CORRECT
   "./icons/icon-192.png",
   "./icons/icon-512.png"
 ];
 
-self.addEventListener("install", e => {
-  e.waitUntil(
-    caches.open(CACHE).then(c => c.addAll(ASSETS))
+self.addEventListener("install", event => {
+  event.waitUntil(
+    caches.open(CACHE).then(cache => {
+      return cache.addAll(ASSETS);
+    })
   );
   self.skipWaiting();
 });
 
-self.addEventListener("activate", e => {
-  e.waitUntil(
+self.addEventListener("activate", event => {
+  event.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(keys.map(key =>
-        key !== CACHE ? caches.delete(key) : null
-      ))
+      Promise.all(
+        keys.map(key => {
+          if (key !== CACHE) return caches.delete(key);
+        })
+      )
     )
   );
   self.clients.claim();
 });
 
-self.addEventListener("fetch", e => {
-  if (e.request.method !== "GET") return;
+self.addEventListener("fetch", event => {
+  if (event.request.method !== "GET") return;
 
-  e.respondWith(
-    caches.match(e.request).then(cached => {
+  event.respondWith(
+    caches.match(event.request).then(cached => {
       if (cached) return cached;
 
-      return fetch(e.request).then(resp => {
-        if (!resp || resp.status !== 200) return resp;
-        const copy = resp.clone();
+      return fetch(event.request).then(response => {
+        if (!response || response.status !== 200) return response;
 
-        caches.open(CACHE).then(c => c.put(e.request, copy));
+        const copy = response.clone();
+        caches.open(CACHE).then(cache => cache.put(event.request, copy));
 
-        return resp;
+        return response;
       });
     })
   );
