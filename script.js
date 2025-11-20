@@ -156,20 +156,8 @@ document.getElementById("refreshDataButton").addEventListener("click", () => {
     .catch(err => {
       console.error("Refresh failed:", err);
       resultEl.innerHTML = `
-        <div style="text-align:center;color:var(--color-accent);font-weight:600;margin-top:8px;">
-          Unable to Refresh.<br>
-          Please check your internet connection.<br><br>
-          <button id="reloadBtn" style="
-            background: transparent;
-            border: 1px solid var(--color-accent);
-            color: var(--color-accent);
-            border-radius: 8px;
-            padding: 8px 16px;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.2s;
-          ">⟳ Reload</button>
+        <div style="text-align:center;color:red;margin-top:8px;">
+          Failed to Refresh.
         </div>
       `;
     });
