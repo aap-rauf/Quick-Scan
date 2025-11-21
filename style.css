@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=WindSong:wght@400;500&display=swap');
+:root {  
   --color-bg-light: #ffffff;
   --color-text-light: #333333;
   --color-accent: #FFD700; /* yellow */
