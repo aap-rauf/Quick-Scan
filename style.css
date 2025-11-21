@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Pacifico&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=WindSong:wght@400;500&display=swap');
   --color-bg-light: #ffffff;
   --color-text-light: #333333;
   --color-accent: #FFD700; /* yellow */
@@ -223,7 +223,7 @@ html[data-theme="dark"] #result {
   position: fixed;
   bottom: 12px;
   right: 15px;
-  font-family: 'Pacifico', cursive;
+  font-family: 'WindSong', cursive;
   font-size: 20px;
   color: var(--signature-color);
   opacity: 0.8;
