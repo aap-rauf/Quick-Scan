@@ -62,19 +62,19 @@ document.getElementById("refreshDataButton").addEventListener("click", () => {
       dataReady = true;
 
       setTimeout(() => {
-        resultEl.innerHTML = `<div style="text-align:center;color:var(--color-accent);font-weight:600;margin-top:8px;">Ready to Search Items</div>`;
+        resultEl.innerHTML = `<div style="text-align:center;color:var(--color-accent);font-weight:600;margin-top:8px;">Ready to Search.</div>`;
       }, 260);
     })
     .catch(err => {
-      console.error("Failed to load sheet:", err);
+      console.error("Loading Failed.:", err);
       clearInterval(progressInterval);
       loadFailed = true;
       loaderFill.style.width = "100%";
       loaderText.textContent = "Error!";
       resultEl.innerHTML = `
         <div style="text-align:center;color:var(--color-accent);font-weight:600;margin-top:8px;">
-          Unable to load.<br>
-          Please check your internet connection.<br><br>
+          Loading Failed,<br>
+          Check your Network Connection.<br><br>
           <button id="reloadBtn" style="
             background: transparent;
             border: 1px solid var(--color-accent);
@@ -147,7 +147,7 @@ document.getElementById("refreshDataButton").addEventListener("click", () => {
       setTimeout(() => {
         resultEl.innerHTML = `
           <div style="text-align:center;color:var(--color-accent);font-weight:600;margin-top:8px;">
-            Sheet Updated — Ready to Search
+            Refreshed — Ready to Search
           </div>
         `;
       }, 260);
@@ -156,7 +156,7 @@ document.getElementById("refreshDataButton").addEventListener("click", () => {
       console.error("Refresh failed:", err);
       resultEl.innerHTML = `
         <div style="text-align:center;color:red;margin-top:8px;">
-          Failed to refresh sheet.
+          Failed to Refresh.
         </div>
       `;
     });
@@ -180,7 +180,7 @@ document.getElementById("refreshDataButton").addEventListener("click", () => {
     if (results.length === 0) {
       resultEl.innerHTML = `
         <div style="text-align:center;color:var(--color-accent);font-weight:600;margin-top:8px;">
-          No matching item found
+          Not Found
         </div>`;
       return;
     }
