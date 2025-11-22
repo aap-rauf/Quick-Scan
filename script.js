@@ -62,7 +62,7 @@ document.getElementById("refreshDataButton").addEventListener("click", () => {
       dataReady = true;
 
       setTimeout(() => {
-        resultEl.innerHTML = `<div style="text-align:center;color:var(--color-accent);font-weight:600;margin-top:8px;">Ready to Search.</div>`;
+        resultEl.innerHTML = `<div style="text-align:center;color:var(--color-accent);font-weight:600;margin-top:8px;">Ready to Search</div>`;
       }, 260);
     })
     .catch(err => {
@@ -109,7 +109,7 @@ document.getElementById("refreshDataButton").addEventListener("click", () => {
 
   let progress = 0;
   let interval = setInterval(() => {
-    if (progress < 92) {
+    if (progress < 93) {
       progress += Math.random() * 6;
       loaderFill.style.width = progress + "%";
       loaderText.textContent = `Refreshing... ${Math.floor(progress)}%`;
