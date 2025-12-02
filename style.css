@@ -250,3 +250,42 @@ html[data-theme="dark"] #result {
   from { opacity: 0; }
   to { opacity: 0.8; }
 }
+#historyPanel {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 260px;
+  height: 100%;
+  background: var(--card-bg);
+  border-right: 1px solid var(--color-accent);
+  transform: translateX(-100%);
+  transition: transform 0.28s ease;
+  padding: 16px;
+  z-index: 9999;
+}
+
+#historyPanel.open {
+  transform: translateX(0);
+}
+
+.history-header {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: var(--color-accent);
+}
+
+.history-item {
+  padding: 10px 8px;
+  border-radius: 8px;
+  background: var(--bg);
+  margin-bottom: 8px;
+  cursor: pointer;
+  font-size: 15px;
+  transition: 0.2s;
+}
+
+.history-item:hover {
+  background: var(--color-accent);
+  color: #000;
+}
