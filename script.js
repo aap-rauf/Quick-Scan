@@ -298,6 +298,11 @@ function renderHistory() {
 
 renderHistory();
 
+document.getElementById("historyBtn").addEventListener("click", () => {
+  const panel = document.getElementById("historyPanel");
+  toggleHistory(!panel.classList.contains("open"));
+});
+
 // Toggle panel
 function toggleHistory(show) {
   const panel = document.getElementById("historyPanel");
