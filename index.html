@@ -13,12 +13,13 @@
 
   <link rel="stylesheet" href="style.css" />
 
-  <!--Add JsBarcode for offline barcode generation -->
+  <!-- JsBarcode for offline barcode generation -->
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
 </head>
 
 <body>
   <header>
+    <!-- tapping this will refresh sheet (manual refresh) -->
     <h1 id="refreshDataButton">Easy Scan</h1>
     <button id="themeToggle" aria-label="Toggle theme">🌙</button>
   </header>
@@ -38,6 +39,16 @@
     <!-- Result area (loader + cards appear here) -->
     <div id="result" role="region" aria-live="polite"></div>
   </main>
+
+  <!-- Bottom sheet for Search History -->
+  <div id="historySheet" class="history-sheet" aria-hidden="true">
+    <div class="history-handle" id="historyHandle"></div>
+    <div class="history-top">
+      <div class="history-title">Search History</div>
+      <button id="clearHistoryBtn" class="small-btn">Clear</button>
+    </div>
+    <div id="historyList" class="history-list" role="list"></div>
+  </div>
 
   <div id="signature">Rauf..</div>
 
