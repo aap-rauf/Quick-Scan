@@ -155,7 +155,7 @@ document.getElementById("refreshDataButton").addEventListener("click", () => {
     .catch(err => {
       console.error("Refresh failed:", err);
       resultEl.innerHTML = `
-        <div style="text-align:center;color:red;margin-top:8px;">
+        <div style="text-align:center;color:var(--color-accent);font-weight:600;margin-top:8px;">
           Failed to Refresh.
         </div>
       `;
