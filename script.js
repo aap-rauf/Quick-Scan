@@ -253,3 +253,77 @@ function escapeHtml(s) {
     }[m] || m);
   });
 }
+
+/* ============================
+      SEARCH HISTORY SYSTEM 
+============================ */
+
+// Load history from storage
+let historyData = JSON.parse(localStorage.getItem("scanHistory")) || [];
+
+// Save history
+function saveHistory(text) {
+  if (!text) return;
+
+  // Remove duplicates
+  historyData = historyData.filter(i => i !== text);
+
+  // Add to top
+  historyData.unshift(text);
+
+  // Keep only 30 items
+  historyData = historyData.slice(0, 30);
+
+  localStorage.setItem("scanHistory", JSON.stringify(historyData));
+
+  renderHistory();
+}
+
+// Render history panel
+function renderHistory() {
+  const list = document.getElementById("historyList");
+  list.innerHTML = historyData
+    .map(item => `<div class="history-item" data-value="${item}">${item}</div>`)
+    .join("");
+
+  // Add click to auto-fill search
+  document.querySelectorAll(".history-item").forEach(el => {
+    el.addEventListener("click", () => {
+      document.getElementById("searchBox").value = el.dataset.value;
+      document.getElementById("searchBox").dispatchEvent(new Event("input"));
+      toggleHistory(false);
+    });
+  });
+}
+
+renderHistory();
+
+// Toggle panel
+function toggleHistory(show) {
+  const panel = document.getElementById("historyPanel");
+  if (show) panel.classList.add("open");
+  else panel.classList.remove("open");
+}
+
+// Open panel when user taps left-edge
+document.addEventListener("swipeleft", () => toggleHistory(true));
+
+// Close by tapping outside
+document.addEventListener("click", e => {
+  if (!document.getElementById("historyPanel").contains(e.target) &&
+      e.target.id !== "historyBtn") {
+    toggleHistory(false);
+  }
+});
+
+// Clear button
+document.getElementById("clearHistoryBtn").addEventListener("click", () => {
+  historyData = [];
+  localStorage.setItem("scanHistory", "[]");
+  renderHistory();
+});
+
+// When search happens → save history
+document.getElementById("searchBox").addEventListener("input", (e) => {
+  saveHistory(e.target.value.trim());
+});
