@@ -253,3 +253,93 @@ function escapeHtml(s) {
     }[m] || m);
   });
 }
+/* ============================
+       SEARCH HISTORY SYSTEM
+============================ */
+
+let historyData = JSON.parse(localStorage.getItem("scanHistory")) || [];
+let historyTimer = null;
+
+// Save History Item
+function saveHistory(text, name) {
+  if (!text || !name) return;
+
+  const entry = `${text} — ${name}`;
+
+  historyData = historyData.filter(i => i !== entry);
+  historyData.unshift(entry);
+
+  historyData = historyData.slice(0, 40);
+
+  localStorage.setItem("scanHistory", JSON.stringify(historyData));
+  renderHistory();
+}
+
+// Render
+function renderHistory() {
+  const list = document.getElementById("historyList");
+  list.innerHTML = historyData
+    .map(i => `<div class="history-item" data-value="${i}">${i}</div>`)
+    .join("");
+
+  document.querySelectorAll(".history-item").forEach(el => {
+    el.addEventListener("click", () => {
+      const value = el.dataset.value.split(" — ")[0];
+      document.getElementById("searchBox").value = value;
+      document.getElementById("searchBox").dispatchEvent(new Event("input"));
+      toggleHistory(false);
+    });
+  });
+}
+
+renderHistory();
+
+/* PANEL OPEN/CLOSE */
+function toggleHistory(show) {
+  const panel = document.getElementById("historyPanel");
+  if (show) panel.classList.add("open");
+  else panel.classList.remove("open");
+}
+
+/* TAP OUTSIDE TO CLOSE */
+document.addEventListener("click", e => {
+  const panel = document.getElementById("historyPanel");
+  if (!panel.contains(e.target) && e.target.id !== "swipeZone") {
+    toggleHistory(false);
+  }
+});
+
+/* ============================
+       SWIPE LEFT TO OPEN
+============================ */
+let touchStartX = 0;
+
+document.getElementById("swipeZone").addEventListener("touchstart", e => {
+  touchStartX = e.touches[0].clientX;
+});
+
+document.getElementById("swipeZone").addEventListener("touchmove", e => {
+  const diff = e.touches[0].clientX - touchStartX;
+  if (diff > 30) toggleHistory(true);
+});
+
+/* ============================
+   SAVE HISTORY AFTER 2 SEC STOP
+============================ */
+
+document.getElementById("searchBox").addEventListener("input", () => {
+  clearTimeout(historyTimer);
+
+  historyTimer = setTimeout(() => {
+    const q = searchBox.value.trim().toLowerCase();
+    if (!q) return;
+
+    const found = data.find(item =>
+      item.searchBarcodes.some(b => b.endsWith(q)) ||
+      item.searchSku.endsWith(q)
+    );
+
+    if (found) saveHistory(found.primaryBarcode || q, found.name);
+
+  }, 2000);
+});
