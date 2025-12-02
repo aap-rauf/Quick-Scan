@@ -250,3 +250,59 @@ html[data-theme="dark"] #result {
   from { opacity: 0; }
   to { opacity: 0.8; }
 }
+
+/* ============================
+      HISTORY PANEL STYLES
+============================ */
+
+.history-panel {
+  position: fixed;
+  top: 0;
+  left: -85%;
+  width: 80%;
+  height: 100%;
+  background: var(--card-bg, #111);
+  border-right: 2px solid var(--color-accent);
+  padding: 15px;
+  z-index: 9999;
+  transition: left 0.33s ease;
+  overflow-y: auto;
+}
+
+.history-panel.open {
+  left: 0;
+}
+
+.history-header {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--color-accent);
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.history-list .history-item {
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--color-accent);
+  border-radius: 8px;
+  font-size: 15px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.history-item:hover {
+  transform: scale(0.98);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* Swipe hot zone */
+#swipeZone {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 18px;
+  height: 100%;
+  z-index: 99999;
+}
