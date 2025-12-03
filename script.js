@@ -359,9 +359,3 @@ function escapeHtml(s) {
 /* ============================
    GLOBAL SWIPE-UP TO OPEN HISTORY
    ============================ */
-
-document.addEventListener("touchstart", e => {
-    if (e.touches[0].clientY > window.innerHeight * 0.7) {
-        openSheet();
-    }
-});
