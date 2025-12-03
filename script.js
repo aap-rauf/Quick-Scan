@@ -356,6 +356,37 @@ function escapeHtml(s) {
     }[m] || m);
   });
 }
-/* ============================
-   GLOBAL SWIPE-UP TO OPEN HISTORY
-   ============================ */
+/* =====================================================
+   GLOBAL SWIPE-UP / SWIPE-DOWN FOR HISTORY BOTTOM SHEET
+   ===================================================== */
+
+const BOTTOM_SWIPE_ZONE = 120;   // user can start swipe within last 120px
+
+let startY = 0;
+let isSwipeFromBottom = false;
+
+document.addEventListener("touchstart", e => {
+  startY = e.touches[0].clientY;
+
+  // If touch started near bottom → valid area
+  if (window.innerHeight - startY < BOTTOM_SWIPE_ZONE) {
+    isSwipeFromBottom = true;
+  } else {
+    isSwipeFromBottom = false;
+  }
+});
+
+document.addEventListener("touchend", e => {
+  const endY = e.changedTouches[0].clientY;
+  const diff = startY - endY;
+
+  // Swipe UP (open)
+  if (isSwipeFromBottom && diff > 60) {
+    openHistory();
+  }
+
+  // Swipe DOWN (close) – valid anywhere inside sheet
+  if (diff < -60) {
+    closeHistory();
+  }
+});
