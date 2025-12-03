@@ -356,7 +356,27 @@ function escapeHtml(s) {
     }[m] || m);
   });
 }
-// Swipe up to open history
-document.addEventListener("touchmove", e => {
-  if (e.touches[0].clientY < 100) openHistory();
+/* ============================
+   GLOBAL SWIPE-UP TO OPEN HISTORY
+   ============================ */
+
+let globalStartY = 0;
+let screenHeight = window.innerHeight;
+
+document.addEventListener("touchstart", e => {
+  globalStartY = e.touches[0].clientY;
+});
+
+document.addEventListener("touchend", e => {
+  let endY = e.changedTouches[0].clientY;
+
+  // User swiped UP
+  let swipeUp = globalStartY - endY > 60;
+
+  // Start zone = bottom half of screen
+  let startInBottomArea = globalStartY > screenHeight * 0.5;
+
+  if (swipeUp && startInBottomArea) {
+    openHistory();
+  }
 });
