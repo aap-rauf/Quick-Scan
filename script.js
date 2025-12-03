@@ -360,23 +360,30 @@ function escapeHtml(s) {
    GLOBAL SWIPE-UP TO OPEN HISTORY
    ============================ */
 
-let globalStartY = 0;
-let screenHeight = window.innerHeight;
+const sheet = document.getElementById("historySheet");
+let startY = 0;
+let currentY = 0;
+let dragging = false;
 
-document.addEventListener("touchstart", e => {
-  globalStartY = e.touches[0].clientY;
+function openSheet() {
+    sheet.style.transform = "translateY(0%)";
+}
+function closeSheet() {
+    sheet.style.transform = "translateY(100%)";
+}
+
+sheet.addEventListener("touchstart", e => {
+    startY = e.touches[0].clientY;
+    dragging = true;
 });
 
-document.addEventListener("touchend", e => {
-  let endY = e.changedTouches[0].clientY;
+sheet.addEventListener("touchmove", e => {
+    if (!dragging) return;
+    currentY = e.touches[0].clientY;
+});
 
-  // User swiped UP
-  let swipeUp = globalStartY - endY > 60;
-
-  // Start zone = bottom half of screen
-  let startInBottomArea = globalStartY > screenHeight * 0.5;
-
-  if (swipeUp && startInBottomArea) {
-    openHistory();
-  }
+sheet.addEventListener("touchend", () => {
+    dragging = false;
+    if (currentY - startY > 40) closeSheet();   // swipe down
+    else if (startY - currentY > 40) openSheet(); // swipe up
 });
