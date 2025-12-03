@@ -274,121 +274,133 @@ function closeHistory() {
   historySheet.style.bottom = "-70%";
 }
 
-/* =====================================================
-   DRAGGABLE BOTTOM SHEET (REAL DRAG WITH FINGER)
-   ===================================================== */
+/* ============================
+   SEARCH HISTORY SYSTEM
+   ============================ */
 
-let dragStartY = 0;
-let sheetStartY = 0;
+let historyData = JSON.parse(localStorage.getItem("searchHistory") || "[]");
+let typingTimer;
+const historySheet = document.getElementById("historySheet");
+const historyList = document.getElementById("historyList");
+const dragZone = document.getElementById("historyDragZone");
+
 let isDragging = false;
-
-const sheetHeight = window.innerHeight * 0.70; // your sheet is 70%
+let dragStartY = 0;
+let sheetHeight = window.innerHeight * 0.70;
 let currentBottom = -sheetHeight;
 
-// Set initial position
+// Initial position
 historySheet.style.bottom = currentBottom + "px";
 
-// Apply smooth animation when NOT dragging
-historySheet.style.transition = "bottom 0.28s ease";
+function renderHistory() {
+  historyList.innerHTML = "";
 
-/* Helper functions */
+  historyData.forEach((h, i) => {
+    let row = document.createElement("div");
+    row.className = "history-item";
+
+    row.innerHTML = `
+      <div>
+        <strong>${escapeHtml(h.text)}</strong><br>
+        <span style="font-size:13px;opacity:0.7">${escapeHtml(h.name)}</span>
+      </div>
+      <button class="delete-history" data-i="${i}">×</button>
+    `;
+
+    historyList.appendChild(row);
+  });
+
+  document.querySelectorAll(".delete-history").forEach(btn => {
+    btn.addEventListener("click", e => {
+      let i = e.target.dataset.i;
+      historyData.splice(i, 1);
+      localStorage.setItem("searchHistory", JSON.stringify(historyData));
+      renderHistory();
+    });
+  });
+}
+
 function openHistory() {
   currentBottom = 0;
-  historySheet.style.transition = "bottom 0.28s ease";
+  historySheet.style.transition = "bottom 0.25s ease";
   historySheet.style.bottom = "0px";
 }
 
 function closeHistory() {
   currentBottom = -sheetHeight;
-  historySheet.style.transition = "bottom 0.28s ease";
+  historySheet.style.transition = "bottom 0.25s ease";
   historySheet.style.bottom = currentBottom + "px";
 }
 
-/* Start drag */
-historySheet.addEventListener("touchstart", e => {
+/* Drag Zone = user swipes ANYWHERE from bottom half */
+dragZone.addEventListener("touchstart", e => {
   dragStartY = e.touches[0].clientY;
-  sheetStartY = historySheet.getBoundingClientRect().bottom;
-  isDragging = true;
+});
 
-  // Disable animation while dragging
+/* Swipe Up Open */
+dragZone.addEventListener("touchend", e => {
+  let endY = e.changedTouches[0].clientY;
+  if (dragStartY - endY > 70) openHistory();
+});
+
+/* Sheet Drag */
+historySheet.addEventListener("touchstart", e => {
+  isDragging = true;
+  dragStartY = e.touches[0].clientY;
   historySheet.style.transition = "none";
 });
 
-/* Dragging */
 historySheet.addEventListener("touchmove", e => {
   if (!isDragging) return;
 
-  const currentY = e.touches[0].clientY;
-  const diff = dragStartY - currentY;
+  let diff = dragStartY - e.touches[0].clientY;
+  let newPos = currentBottom + diff;
 
-  let newBottom = currentBottom + diff;
+  if (newPos > 0) newPos = 0;
+  if (newPos < -sheetHeight) newPos = -sheetHeight;
 
-  // Limit drag area
-  if (newBottom > 0) newBottom = 0;
-  if (newBottom < -sheetHeight) newBottom = -sheetHeight;
-
-  historySheet.style.bottom = newBottom + "px";
+  historySheet.style.bottom = newPos + "px";
 });
 
-/* Release */
 historySheet.addEventListener("touchend", e => {
   isDragging = false;
+  let endY = e.changedTouches[0].clientY;
+  let drag = dragStartY - endY;
 
-  const endY = e.changedTouches[0].clientY;
-  const dragDistance = dragStartY - endY;
-
-  // Decide open or close based on drag
-  if (dragDistance > 80) {
-    openHistory();
-  } else if (dragDistance < -80) {
-    closeHistory();
-  } else {
-    // Return to original position if small pull
-    currentBottom > -sheetHeight / 2 ? openHistory() : closeHistory();
-  }
+  if (drag > 80) openHistory();
+  else if (drag < -80) closeHistory();
+  else currentBottom > -sheetHeight / 2 ? openHistory() : closeHistory();
 });
 
-// ============= SAVE HISTORY AFTER 2 SEC STOP TYPING ==============
-
-// Modify your searchBox input handler:
-
+/* Save history after 2 sec stop typing */
 searchBox.addEventListener("input", () => {
   clearTimeout(typingTimer);
-  typingTimer = setTimeout(saveSearchHistory, 2000);
+  typingTimer = setTimeout(saveToHistory, 2000);
 });
 
-function saveSearchHistory() {
+function saveToHistory() {
   const q = searchBox.value.trim().toLowerCase();
   if (!q) return;
 
-  // Find item
   const match = data.find(item =>
     item.searchBarcodes.some(b => b.endsWith(q)) ||
     item.searchSku.endsWith(q)
   );
-
   if (!match) return;
 
-  // Prevent duplicates
   historyData = historyData.filter(h => h.text !== q);
 
-  // Add new entry
   historyData.unshift({
     text: q,
     name: match.name
   });
 
-  // Limit history
-  if (historyData.length > 30) historyData.pop();
+  if (historyData.length > 50) historyData.pop();
 
-  // Save
   localStorage.setItem("searchHistory", JSON.stringify(historyData));
-
-  // Update UI
   renderHistory();
 }
 
-// Load saved history on startup
 renderHistory();
   
   // THEME TOGGLE ===============================================================
