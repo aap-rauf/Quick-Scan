@@ -274,133 +274,69 @@ function closeHistory() {
   historySheet.style.bottom = "-70%";
 }
 
-/* ============================
-   SEARCH HISTORY SYSTEM
-   ============================ */
+/* Gesture Swipe Up/Down */
+let globalStartY = 0;
+let screenHeight = window.innerHeight;
 
-let historyData = JSON.parse(localStorage.getItem("searchHistory") || "[]");
-let typingTimer;
-const historySheet = document.getElementById("historySheet");
-const historyList = document.getElementById("historyList");
-const dragZone = document.getElementById("historyDragZone");
-
-let isDragging = false;
-let dragStartY = 0;
-let sheetHeight = window.innerHeight * 0.70;
-let currentBottom = -sheetHeight;
-
-// Initial position
-historySheet.style.bottom = currentBottom + "px";
-
-function renderHistory() {
-  historyList.innerHTML = "";
-
-  historyData.forEach((h, i) => {
-    let row = document.createElement("div");
-    row.className = "history-item";
-
-    row.innerHTML = `
-      <div>
-        <strong>${escapeHtml(h.text)}</strong><br>
-        <span style="font-size:13px;opacity:0.7">${escapeHtml(h.name)}</span>
-      </div>
-      <button class="delete-history" data-i="${i}">×</button>
-    `;
-
-    historyList.appendChild(row);
-  });
-
-  document.querySelectorAll(".delete-history").forEach(btn => {
-    btn.addEventListener("click", e => {
-      let i = e.target.dataset.i;
-      historyData.splice(i, 1);
-      localStorage.setItem("searchHistory", JSON.stringify(historyData));
-      renderHistory();
-    });
-  });
-}
-
-function openHistory() {
-  currentBottom = 0;
-  historySheet.style.transition = "bottom 0.25s ease";
-  historySheet.style.bottom = "0px";
-}
-
-function closeHistory() {
-  currentBottom = -sheetHeight;
-  historySheet.style.transition = "bottom 0.25s ease";
-  historySheet.style.bottom = currentBottom + "px";
-}
-
-/* Drag Zone = user swipes ANYWHERE from bottom half */
-dragZone.addEventListener("touchstart", e => {
-  dragStartY = e.touches[0].clientY;
+document.addEventListener("touchstart", e => {
+  globalStartY = e.touches[0].clientY;
 });
 
-/* Swipe Up Open */
-dragZone.addEventListener("touchend", e => {
+document.addEventListener("touchend", e => {
   let endY = e.changedTouches[0].clientY;
-  if (dragStartY - endY > 70) openHistory();
+
+  // User swiped UP
+  let swipeUp = globalStartY - endY > 60;
+
+  // Start zone = bottom half of screen
+  let startInBottomArea = globalStartY > screenHeight * 0.5;
+
+  if (swipeUp && startInBottomArea) {
+    openHistory();
+  }
 });
 
-/* Sheet Drag */
-historySheet.addEventListener("touchstart", e => {
-  isDragging = true;
-  dragStartY = e.touches[0].clientY;
-  historySheet.style.transition = "none";
-});
+// ============= SAVE HISTORY AFTER 2 SEC STOP TYPING ==============
 
-historySheet.addEventListener("touchmove", e => {
-  if (!isDragging) return;
+// Modify your searchBox input handler:
 
-  let diff = dragStartY - e.touches[0].clientY;
-  let newPos = currentBottom + diff;
-
-  if (newPos > 0) newPos = 0;
-  if (newPos < -sheetHeight) newPos = -sheetHeight;
-
-  historySheet.style.bottom = newPos + "px";
-});
-
-historySheet.addEventListener("touchend", e => {
-  isDragging = false;
-  let endY = e.changedTouches[0].clientY;
-  let drag = dragStartY - endY;
-
-  if (drag > 80) openHistory();
-  else if (drag < -80) closeHistory();
-  else currentBottom > -sheetHeight / 2 ? openHistory() : closeHistory();
-});
-
-/* Save history after 2 sec stop typing */
 searchBox.addEventListener("input", () => {
   clearTimeout(typingTimer);
-  typingTimer = setTimeout(saveToHistory, 2000);
+  typingTimer = setTimeout(saveSearchHistory, 2000);
 });
 
-function saveToHistory() {
+function saveSearchHistory() {
   const q = searchBox.value.trim().toLowerCase();
   if (!q) return;
 
+  // Find item
   const match = data.find(item =>
     item.searchBarcodes.some(b => b.endsWith(q)) ||
     item.searchSku.endsWith(q)
   );
+
   if (!match) return;
 
+  // Prevent duplicates
   historyData = historyData.filter(h => h.text !== q);
 
+  // Add new entry
   historyData.unshift({
     text: q,
     name: match.name
   });
 
-  if (historyData.length > 50) historyData.pop();
+  // Limit history
+  if (historyData.length > 30) historyData.pop();
 
+  // Save
   localStorage.setItem("searchHistory", JSON.stringify(historyData));
+
+  // Update UI
   renderHistory();
 }
 
+// Load saved history on startup
 renderHistory();
   
   // THEME TOGGLE ===============================================================
@@ -431,3 +367,7 @@ function escapeHtml(s) {
     }[m] || m);
   });
 }
+/* ============================
+   GLOBAL SWIPE-UP TO OPEN HISTORY
+   ============================ */
+
