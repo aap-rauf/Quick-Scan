@@ -225,6 +225,109 @@ document.getElementById("refreshDataButton").addEventListener("click", () => {
     }
   });
 
+  /* ============================
+   SEARCH HISTORY SYSTEM
+   ============================ */
+
+let historyData = JSON.parse(localStorage.getItem("searchHistory") || "[]");
+let typingTimer; 
+
+const historySheet = document.getElementById("historySheet");
+const historyList = document.getElementById("historyList");
+
+// Render history items
+function renderHistory() {
+  historyList.innerHTML = "";
+
+  historyData.forEach((h, index) => {
+    const div = document.createElement("div");
+    div.className = "history-item";
+
+    div.innerHTML = `
+      <div class="history-text">
+        <strong>${escapeHtml(h.text)}</strong><br>
+        <span style="font-size:13px;opacity:0.7">${escapeHtml(h.name)}</span>
+      </div>
+      <button class="delete-history" data-index="${index}">×</button>
+    `;
+
+    historyList.appendChild(div);
+  });
+
+  document.querySelectorAll(".delete-history").forEach(btn => {
+    btn.addEventListener("click", e => {
+      const i = e.target.getAttribute("data-index");
+      historyData.splice(i, 1);
+      localStorage.setItem("searchHistory", JSON.stringify(historyData));
+      renderHistory();
+    });
+  });
+}
+
+// Open sheet
+function openHistory() {
+  historySheet.style.bottom = "0";
+}
+
+// Close sheet
+function closeHistory() {
+  historySheet.style.bottom = "-70%";
+}
+
+/* Gesture Swipe Up/Down */
+let touchStartY = 0;
+historySheet.addEventListener("touchstart", e => {
+  touchStartY = e.touches[0].clientY;
+});
+historySheet.addEventListener("touchend", e => {
+  let endY = e.changedTouches[0].clientY;
+  if (touchStartY - endY > 50) openHistory();
+  if (endY - touchStartY > 50) closeHistory();
+});
+
+// ============= SAVE HISTORY AFTER 2 SEC STOP TYPING ==============
+
+// Modify your searchBox input handler:
+
+searchBox.addEventListener("input", () => {
+  clearTimeout(typingTimer);
+  typingTimer = setTimeout(saveSearchHistory, 2000);
+});
+
+function saveSearchHistory() {
+  const q = searchBox.value.trim().toLowerCase();
+  if (!q) return;
+
+  // Find item
+  const match = data.find(item =>
+    item.searchBarcodes.some(b => b.endsWith(q)) ||
+    item.searchSku.endsWith(q)
+  );
+
+  if (!match) return;
+
+  // Prevent duplicates
+  historyData = historyData.filter(h => h.text !== q);
+
+  // Add new entry
+  historyData.unshift({
+    text: q,
+    name: match.name
+  });
+
+  // Limit history
+  if (historyData.length > 30) historyData.pop();
+
+  // Save
+  localStorage.setItem("searchHistory", JSON.stringify(historyData));
+
+  // Update UI
+  renderHistory();
+}
+
+// Load saved history on startup
+renderHistory();
+  
   // THEME TOGGLE ===============================================================
   themeToggle.addEventListener("click", () => {
     const html = document.documentElement;
@@ -253,3 +356,7 @@ function escapeHtml(s) {
     }[m] || m);
   });
 }
+// Swipe up to open history
+document.addEventListener("touchmove", e => {
+  if (e.touches[0].clientY < 100) openHistory();
+});
