@@ -274,15 +274,78 @@ function closeHistory() {
   historySheet.style.bottom = "-70%";
 }
 
-/* Gesture Swipe Up/Down */
-let touchStartY = 0;
+/* =====================================================
+   DRAGGABLE BOTTOM SHEET (REAL DRAG WITH FINGER)
+   ===================================================== */
+
+let dragStartY = 0;
+let sheetStartY = 0;
+let isDragging = false;
+
+const sheetHeight = window.innerHeight * 0.70; // your sheet is 70%
+let currentBottom = -sheetHeight;
+
+// Set initial position
+historySheet.style.bottom = currentBottom + "px";
+
+// Apply smooth animation when NOT dragging
+historySheet.style.transition = "bottom 0.28s ease";
+
+/* Helper functions */
+function openHistory() {
+  currentBottom = 0;
+  historySheet.style.transition = "bottom 0.28s ease";
+  historySheet.style.bottom = "0px";
+}
+
+function closeHistory() {
+  currentBottom = -sheetHeight;
+  historySheet.style.transition = "bottom 0.28s ease";
+  historySheet.style.bottom = currentBottom + "px";
+}
+
+/* Start drag */
 historySheet.addEventListener("touchstart", e => {
-  touchStartY = e.touches[0].clientY;
+  dragStartY = e.touches[0].clientY;
+  sheetStartY = historySheet.getBoundingClientRect().bottom;
+  isDragging = true;
+
+  // Disable animation while dragging
+  historySheet.style.transition = "none";
 });
+
+/* Dragging */
+historySheet.addEventListener("touchmove", e => {
+  if (!isDragging) return;
+
+  const currentY = e.touches[0].clientY;
+  const diff = dragStartY - currentY;
+
+  let newBottom = currentBottom + diff;
+
+  // Limit drag area
+  if (newBottom > 0) newBottom = 0;
+  if (newBottom < -sheetHeight) newBottom = -sheetHeight;
+
+  historySheet.style.bottom = newBottom + "px";
+});
+
+/* Release */
 historySheet.addEventListener("touchend", e => {
-  let endY = e.changedTouches[0].clientY;
-  if (touchStartY - endY > 50) openHistory();
-  if (endY - touchStartY > 50) closeHistory();
+  isDragging = false;
+
+  const endY = e.changedTouches[0].clientY;
+  const dragDistance = dragStartY - endY;
+
+  // Decide open or close based on drag
+  if (dragDistance > 80) {
+    openHistory();
+  } else if (dragDistance < -80) {
+    closeHistory();
+  } else {
+    // Return to original position if small pull
+    currentBottom > -sheetHeight / 2 ? openHistory() : closeHistory();
+  }
 });
 
 // ============= SAVE HISTORY AFTER 2 SEC STOP TYPING ==============
@@ -356,37 +419,3 @@ function escapeHtml(s) {
     }[m] || m);
   });
 }
-/* =====================================================
-   GLOBAL SWIPE-UP / SWIPE-DOWN FOR HISTORY BOTTOM SHEET
-   ===================================================== */
-
-const BOTTOM_SWIPE_ZONE = 120;   // user can start swipe within last 120px
-
-let startY = 0;
-let isSwipeFromBottom = false;
-
-document.addEventListener("touchstart", e => {
-  startY = e.touches[0].clientY;
-
-  // If touch started near bottom → valid area
-  if (window.innerHeight - startY < BOTTOM_SWIPE_ZONE) {
-    isSwipeFromBottom = true;
-  } else {
-    isSwipeFromBottom = false;
-  }
-});
-
-document.addEventListener("touchend", e => {
-  const endY = e.changedTouches[0].clientY;
-  const diff = startY - endY;
-
-  // Swipe UP (open)
-  if (isSwipeFromBottom && diff > 60) {
-    openHistory();
-  }
-
-  // Swipe DOWN (close) – valid anywhere inside sheet
-  if (diff < -60) {
-    closeHistory();
-  }
-});
