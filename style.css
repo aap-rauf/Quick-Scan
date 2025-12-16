@@ -45,14 +45,26 @@ main {
   margin-top: 20px;
 }
 
-#searchBox {
-  width: 100%;
-  padding: 12px;
-  font-size: 18px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  box-sizing: border-box;
+/* From Uiverse.io by nsanzamaho_5220 */ 
+.input {
+  border: 2px solid transparent;
+  width: 15em;
+  height: 2.5em;
+  padding-left: 0.8em;
+  outline: none;
+  overflow: hidden;
+  background-color: #f3f3f3;
+  border-radius: 10px;
+  transition: all 0.5s;
 }
+
+.input:hover,
+.input:focus {
+  border: 2px solid #4a9dec;
+  box-shadow: 0px 0px 0px 7px rgb(74, 157, 236, 20%);
+  background-color: white;
+}
+
 
 .overlay {
   position: fixed;
