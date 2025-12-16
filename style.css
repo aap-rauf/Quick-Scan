@@ -45,14 +45,14 @@ main {
   margin-top: 20px;
 }
 
-searchBox {
+#searchBox {
   width: 100%;
   padding: 12px;
   font-size: 18px;
   border: 1px solid #ccc;
   border-radius: 6px;
   box-sizing: border-box;
-
+}
 
 .overlay {
   position: fixed;
