@@ -1,4 +1,4 @@
-const CACHE = "easy-scan-v101";
+const CACHE = "easy-scan-v1.0.1";
 
 const ASSETS = [
   "./",
