@@ -46,12 +46,28 @@
 
   <!-- Service worker -->
   <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker
-        .register('service-worker.js')
-        .then(() => console.log('Service Worker registered'))
-        .catch(e => console.warn('SW register failed', e));
-    }
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./service-worker.js')
+    .then(reg => {
+
+      reg.addEventListener('updatefound', () => {
+        const newWorker = reg.installing;
+
+        newWorker.addEventListener('statechange', () => {
+          if (
+            newWorker.state === 'installed' &&
+            navigator.serviceWorker.controller
+          ) {
+            if (confirm('New version available. Update now?')) {
+              newWorker.postMessage({ action: 'skipWaiting' });
+            }
+          }
+        });
+      });
+
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        window.location.reload();
+      });
+    });
+}
   </script>
-</body>
-</html>
