@@ -74,28 +74,20 @@ document.getElementById("refreshDataButton").addEventListener("click", () => {
       }, 260);
     })
     .catch(err => {
-      console.error("Loading Failed.:", err);
-      clearInterval(progressInterval);
-      loadFailed = true;
-      loaderFill.style.width = "100%";
-      loaderText.textContent = "Error!";
-      resultEl.innerHTML = `
-        <div style="text-align:center;color:var(--color-accent);font-weight:600;margin-top:8px;">
-          Loading Failed,<br>
-          Check your Network Connection.<br><br>
-          <button id="reloadBtn" style="
-            background: transparent;
-            border: 1px solid var(--color-accent);
-            color: var(--color-accent);
-            border-radius: 8px;
-            padding: 8px 16px;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.2s;
-          ">⟳ Reload</button>
-        </div>
-      `;
+  console.error("Loading Failed:", err);
+
+  resultEl.innerHTML = `
+    <div style="
+      text-align:center;
+      color:red;
+      font-weight:bold;
+      padding:20px;
+    ">
+      ERROR:<br><br>
+      ${err.message}
+    </div>
+  `;
+});
       const reloadBtn = document.getElementById("reloadBtn");
       if (reloadBtn) reloadBtn.addEventListener("click", () => location.reload());
     });
