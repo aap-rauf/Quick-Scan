@@ -7,6 +7,13 @@ let dataReady = false;
 let loadFailed = false;
 let progressInterval;
 
+const cachedData = localStorage.getItem("sheetData");
+
+if (cachedData) {
+  data = JSON.parse(cachedData);
+  dataReady = true;
+}
+
 document.addEventListener("DOMContentLoaded", () => {
   const resultEl = document.getElementById("result");
   const searchBox = document.getElementById("searchBox");
@@ -55,6 +62,7 @@ document.getElementById("refreshDataButton").addEventListener("click", () => {
           searchBarcodes: barcodeList.map(b => b.toLowerCase()),
         };
       });
+      localStorage.setItem("sheetData", JSON.stringify(data));
 
       clearInterval(progressInterval);
       loaderFill.style.width = "100%";
@@ -160,6 +168,7 @@ document.getElementById("refreshDataButton").addEventListener("click", () => {
         </div>
       `;
     });
+    localStorage.setItem("sheetData", JSON.stringify(data));
 }
 
   // SEARCH =====================================================================
