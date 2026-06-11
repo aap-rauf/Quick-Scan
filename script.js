@@ -14,13 +14,6 @@ if (cachedData) {
   dataReady = true;
 }
 
-document.addEventListener("DOMContentLoaded", () => {
-  const resultEl = document.getElementById("result");
-  const searchBox = document.getElementById("searchBox");
-  const themeToggle = document.getElementById("themeToggle");
-document.getElementById("refreshDataButton").addEventListener("click", () => {
-  reloadSheetData();
-});
   // Loader UI
   resultEl.innerHTML = `
     <div class="loader-container" aria-hidden="false">
