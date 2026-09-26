@@ -148,7 +148,7 @@ main {
   padding: 0;
   max-width: 650px;
   width: 100%;
-  display: flex;
+  display: block;
   background: transparent;
   box-shadow: none;
   border-radius: 0;
