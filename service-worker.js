@@ -2,7 +2,7 @@
 // EASY SCAN SERVICE WORKER
 // ============================================================
 
-const CACHE = "easy-scan-v1.1.1";
+const CACHE = "easy-scan-v1.1.2";
 
 const ASSETS = [
   "./",
@@ -23,9 +23,12 @@ self.addEventListener("install", event => {
 
   event.waitUntil(
 
-    caches.open(CACHE).then(cache => {
+    caches.open(CACHE).then(async cache => {
 
-      return cache.addAll(ASSETS);
+      await cache.addAll(ASSETS);
+
+      // Activate this version immediately.
+      await self.skipWaiting();
 
     })
 
@@ -42,9 +45,11 @@ self.addEventListener("activate", event => {
 
   event.waitUntil(
 
-    caches.keys().then(keys => {
+    (async () => {
 
-      return Promise.all(
+      const keys = await caches.keys();
+
+      await Promise.all(
 
         keys.map(key => {
 
@@ -58,11 +63,12 @@ self.addEventListener("activate", event => {
 
       );
 
-    })
+      // Start controlling open pages immediately.
+      await self.clients.claim();
+
+    })()
 
   );
-
-  self.clients.claim();
 
 });
 
@@ -95,7 +101,6 @@ self.addEventListener("fetch", event => {
     return;
   }
 
-
   const requestURL =
     new URL(event.request.url);
 
@@ -120,22 +125,95 @@ self.addEventListener("fetch", event => {
 
 
   // ========================================================
+  // NAVIGATION
+  // ========================================================
+  //
+  // IMPORTANT:
+  // When Easy Scan is closed and opened again while offline,
+  // the browser makes a new navigation request for the app.
+  //
+  // Always use the cached index.html as the offline fallback.
+  //
+
+  if (event.request.mode === "navigate") {
+
+    event.respondWith(
+
+      fetch(event.request)
+
+        .then(networkResponse => {
+
+          // Keep the latest successful app page cached.
+          if (
+            networkResponse &&
+            networkResponse.status === 200
+          ) {
+
+            const copy =
+              networkResponse.clone();
+
+            caches.open(CACHE)
+              .then(cache => {
+                cache.put(
+                  "./index.html",
+                  copy
+                );
+              });
+
+          }
+
+          return networkResponse;
+
+        })
+
+        .catch(async () => {
+
+          const cachedPage =
+            await caches.match(
+              "./index.html"
+            );
+
+          if (cachedPage) {
+            return cachedPage;
+          }
+
+          return new Response(
+            "Easy Scan is not available offline yet. Open it once while online.",
+            {
+              status: 503,
+              headers: {
+                "Content-Type":
+                  "text/plain; charset=utf-8"
+              }
+            }
+          );
+
+        })
+
+    );
+
+    return;
+
+  }
+
+
+  // ========================================================
   // APP FILES / OTHER RESOURCES
   // ========================================================
 
   event.respondWith(
 
     caches.match(event.request)
+
       .then(cachedResponse => {
 
         if (cachedResponse) {
-
           return cachedResponse;
-
         }
 
 
         return fetch(event.request)
+
           .then(networkResponse => {
 
             if (
@@ -148,9 +226,10 @@ self.addEventListener("fetch", event => {
             }
 
 
+            // Cache successful same-origin resources
+            // and CORS resources such as JsBarcode.
             const copy =
               networkResponse.clone();
-
 
             caches.open(CACHE)
               .then(cache => {
@@ -158,7 +237,10 @@ self.addEventListener("fetch", event => {
                 cache.put(
                   event.request,
                   copy
-                );
+                ).catch(() => {
+                  // Ignore resources the browser does not
+                  // allow CacheStorage to store.
+                });
 
               });
 
@@ -168,10 +250,6 @@ self.addEventListener("fetch", event => {
           })
 
           .catch(() => {
-
-            // If the request cannot be reached,
-            // return an offline response instead
-            // of causing an unhandled failure.
 
             return new Response(
               "Offline",
