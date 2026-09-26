@@ -299,5 +299,5 @@ html[data-theme="dark"] #result {
 }
 
 html[data-theme="dark"] .search-history-item {
-  border-color: rgba(255,255,255,0.15);
+  border-color: rgba(255, 215, 0, 0.3); /* Optional: subtle gold border */
 }
