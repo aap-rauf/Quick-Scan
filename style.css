@@ -291,3 +291,21 @@ main {
   align-items: center;
   justify-content: space-between;
 }
+.history-product-name {
+  flex: 1;
+  text-align: left;
+  font-weight: 600;
+}
+
+.history-search-value {
+  margin-left: 15px;
+  text-align: right;
+  opacity: 0.65;
+  white-space: nowrap;
+}
+
+.search-history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
