@@ -251,3 +251,40 @@ html[data-theme="dark"] #result {
   from { opacity: 0; }
   to { opacity: 0.8; }
 }
+/* =====================================================
+   RECENTLY SEARCHED
+   ===================================================== */
+
+#recentSearches {
+  width: 100%;
+  margin-top: 8px;
+  box-sizing: border-box;
+}
+
+.recent-title {
+  color: var(--color-accent);
+  font-size: 14px;
+  font-weight: 600;
+  margin: 8px 0;
+}
+
+.recent-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.recent-item {
+  background: transparent;
+  border: 1px solid var(--color-accent);
+  color: inherit;
+  border-radius: 16px;
+  padding: 6px 10px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.recent-item:active {
+  transform: scale(0.95);
+}
