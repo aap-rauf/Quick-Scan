@@ -2,7 +2,7 @@
 // EASY SCAN SERVICE WORKER
 // ============================================================
 
-const CACHE = "easy-scan-v1.0.8";
+const CACHE = "easy-scan-v1.0.9";
 
 const ASSETS = [
   "./",
