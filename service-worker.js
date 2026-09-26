@@ -1,4 +1,4 @@
-const CACHE = "easy-scan-v1.0.4";
+const CACHE = "easy-scan-v1.0.5";
 
 const ASSETS = [
   "./",
@@ -10,38 +10,85 @@ const ASSETS = [
   "./icons/icon-512.png"
 ];
 
-self.addEventListener("install", e => {
-  e.waitUntil(
-    caches.open(CACHE).then(c => c.addAll(ASSETS))
+self.addEventListener("install", event => {
+  event.waitUntil(
+    caches.open(CACHE).then(cache => {
+      return cache.addAll(ASSETS);
+    })
   );
-  self.skipWaiting();
+
+  // Do NOT activate immediately.
+  // The webpage will ask the user before updating.
 });
 
-self.addEventListener("activate", e => {
-  e.waitUntil(
+self.addEventListener("activate", event => {
+  event.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(keys.map(key =>
-        key !== CACHE ? caches.delete(key) : null
-      ))
+      Promise.all(
+        keys.map(key =>
+          key !== CACHE
+            ? caches.delete(key)
+            : null
+        )
+      )
     )
   );
+
   self.clients.claim();
 });
 
-self.addEventListener("fetch", e => {
-  if (e.request.method !== "GET") return;
+// Allow the webpage to activate the new version
+self.addEventListener("message", event => {
+  if (
+    event.data &&
+    event.data.action === "skipWaiting"
+  ) {
+    self.skipWaiting();
+  }
+});
 
-  e.respondWith(
-    caches.match(e.request).then(cached => {
-      if (cached) return cached;
+self.addEventListener("fetch", event => {
+  if (event.request.method !== "GET") {
+    return;
+  }
 
-      return fetch(e.request).then(resp => {
-        if (!resp || resp.status !== 200) return resp;
-        const copy = resp.clone();
+  const requestURL =
+    new URL(event.request.url);
 
-        caches.open(CACHE).then(c => c.put(e.request, copy));
+  // IMPORTANT:
+  // Never cache Google Sheets requests.
+  // Inventory must always come from Google Sheets.
+  if (
+    requestURL.hostname === "docs.google.com"
+  ) {
+    return;
+  }
 
-        return resp;
+  // Keep the existing caching behavior
+  // for the Easy Scan app and other resources.
+  event.respondWith(
+    caches.match(event.request).then(cached => {
+
+      if (cached) {
+        return cached;
+      }
+
+      return fetch(event.request).then(response => {
+
+        if (
+          !response ||
+          response.status !== 200
+        ) {
+          return response;
+        }
+
+        const copy = response.clone();
+
+        caches.open(CACHE).then(cache => {
+          cache.put(event.request, copy);
+        });
+
+        return response;
       });
     })
   );
