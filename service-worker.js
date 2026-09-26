@@ -2,7 +2,9 @@
 // EASY SCAN SERVICE WORKER
 // ============================================================
 
-const CACHE = "easy-scan-v1.1.2";
+const CACHE = "easy-scan-v1.1.3";
+
+const INVENTORY_BACKUP_CACHE = "easyScanInventoryBackup-v1";
 
 const ASSETS = [
   "./",
@@ -53,7 +55,7 @@ self.addEventListener("activate", event => {
 
         keys.map(key => {
 
-          if (key !== CACHE) {
+          if (key !== CACHE && key !== INVENTORY_BACKUP_CACHE) {
             return caches.delete(key);
           }
 
