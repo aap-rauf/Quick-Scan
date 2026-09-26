@@ -273,21 +273,21 @@ main {
   cursor: pointer;
 }
 
-.search-history-item:active {
-  transform: scale(0.98);
-}
-
-html[data-theme="dark"] .search-history-item {
-  border-color: rgba(255, 215, 0, 0.4);
-}
 .history-product-name {
+  flex: 1;
+  text-align: left;
   font-weight: 600;
-  font-size: 15px;
-  color: inherit;
 }
 
 .history-search-value {
-  margin-top: 3px;
-  font-size: 13px;
+  margin-left: 15px;
+  text-align: right;
   opacity: 0.65;
+  white-space: nowrap;
+}
+
+.search-history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
