@@ -1,151 +1,285 @@
-```javascript
+// ============================================================
+// EASY SCAN
+// CACHE-FIRST INVENTORY + BACKGROUND SHEET UPDATE
+// + LAST 10 SEARCH HISTORY
+// ============================================================
+
 const SHEET_URL =
   "https://docs.google.com/spreadsheets/d/1vtZ2Xmb4eKPFs_v-D-nVNAm2_d2TtqqaMFO93TtaKxM/gviz/tq?tqx=out:json";
 
 const INVENTORY_CACHE_KEY = "easyScanInventory";
 const INVENTORY_VERSION_KEY = "easyScanInventoryVersion";
-const SEARCH_HISTORY_KEY = "easyScanSearchHistory";
 
+const SEARCH_HISTORY_KEY = "easyScanSearchHistory";
 const MAX_HISTORY = 10;
-const APP_VERSION = "1.1.0";
 
 let data = [];
 let dataReady = false;
 let loadFailed = false;
-let progressInterval;
-let searchSaveTimer = null;
+
+let searchHistoryTimer = null;
+
+
+// ============================================================
+// APP START
+// ============================================================
 
 document.addEventListener("DOMContentLoaded", () => {
-  const resultEl = document.getElementById("result");
-  const searchBox = document.getElementById("searchBox");
-  const themeToggle = document.getElementById("themeToggle");
-  const titleButton = document.getElementById("refreshDataButton");
 
-  /* =========================================================
-     THEME
-  ========================================================= */
+  const resultEl =
+    document.getElementById("result");
 
-  const savedTheme = localStorage.getItem("theme") || "light";
-  document.documentElement.setAttribute("data-theme", savedTheme);
+  const searchBox =
+    document.getElementById("searchBox");
+
+  const themeToggle =
+    document.getElementById("themeToggle");
+
+  const refreshButton =
+    document.getElementById("refreshDataButton");
+
+
+  // ==========================================================
+  // RESTORE THEME
+  // ==========================================================
+
+  const savedTheme =
+    localStorage.getItem("theme") || "light";
+
+  document.documentElement.setAttribute(
+    "data-theme",
+    savedTheme
+  );
 
   if (themeToggle) {
-    themeToggle.textContent = savedTheme === "dark" ? "☀️" : "🌙";
+
+    themeToggle.textContent =
+      savedTheme === "light"
+        ? "🌙"
+        : "☀️";
 
     themeToggle.addEventListener("click", () => {
-      const currentTheme =
-        document.documentElement.getAttribute("data-theme");
 
-      const newTheme = currentTheme === "dark" ? "light" : "dark";
+      const html =
+        document.documentElement;
 
-      document.documentElement.setAttribute("data-theme", newTheme);
-      localStorage.setItem("theme", newTheme);
+      const current =
+        html.getAttribute("data-theme");
 
-      themeToggle.textContent = newTheme === "dark" ? "☀️" : "🌙";
+      const next =
+        current === "light"
+          ? "dark"
+          : "light";
+
+      html.setAttribute(
+        "data-theme",
+        next
+      );
+
+      localStorage.setItem(
+        "theme",
+        next
+      );
+
+      themeToggle.textContent =
+        next === "light"
+          ? "🌙"
+          : "☀️";
+
     });
+
   }
 
-  /* =========================================================
-     LEFT MENU
-  ========================================================= */
 
-  createMenu();
+  // ==========================================================
+  // TITLE CLICK = MANUAL REFRESH
+  // ==========================================================
 
-  /* =========================================================
-     EASY SCAN TITLE = MANUAL REFRESH
-  ========================================================= */
+  if (refreshButton) {
 
-  if (titleButton) {
-    titleButton.addEventListener("click", () => {
-      reloadSheetData();
-    });
+    refreshButton.addEventListener(
+      "click",
+      () => {
+
+        reloadSheetData();
+
+      }
+    );
+
   }
 
-  /* =========================================================
-     STARTUP
-     CACHE FIRST
-  ========================================================= */
 
-  const savedInventory = getSavedInventory();
+  // ==========================================================
+  // CACHE-FIRST START
+  // ==========================================================
 
-  if (savedInventory && savedInventory.length > 0) {
+  const savedInventory =
+    getSavedInventory();
+
+
+  if (savedInventory) {
+
+    // ------------------------------------------
+    // CACHE EXISTS
+    // ------------------------------------------
+
     data = savedInventory;
+
     dataReady = true;
     loadFailed = false;
 
+
     resultEl.innerHTML = "";
 
+
+    // Show history
     renderHistory();
 
-    // Check Google Sheet in background
+
+    // ------------------------------------------
+    // IMPORTANT:
+    // Search is ready NOW.
+    // Google Sheet is checked separately.
+    // ------------------------------------------
+
     updateInventoryInBackground();
-  } else {
-    showFirstLoad();
+
   }
 
-  /* =========================================================
-     SEARCH
-  ========================================================= */
+  else {
 
-  searchBox.addEventListener("input", () => {
-    if (loadFailed || !dataReady) return;
+    // ------------------------------------------
+    // FIRST EVER START
+    // No cache exists yet.
+    // Internet is required only once.
+    // ------------------------------------------
 
-    const q = searchBox.value.trim().toLowerCase();
+    showFirstLoad();
 
-    clearTimeout(searchSaveTimer);
+  }
 
-    if (!q) {
-      resultEl.innerHTML = "";
-      renderHistory();
+
+  // ==========================================================
+  // SEARCH
+  // ==========================================================
+
+  searchBox.addEventListener("input", (e) => {
+
+    if (!dataReady) {
       return;
     }
 
-    const results = data.filter(item =>
-      item.searchBarcodes.some(barcode => barcode.endsWith(q)) ||
-      item.searchSku.endsWith(q)
-    );
+
+    const q =
+      e.target.value
+        .trim()
+        .toLowerCase();
+
+
+    // Cancel previous history timer
+    clearTimeout(searchHistoryTimer);
+
+
+    // Empty search
+    if (!q) {
+
+      resultEl.innerHTML = "";
+
+      renderHistory();
+
+      return;
+    }
+
+
+    // ========================================================
+    // FIND PRODUCTS
+    // ========================================================
+
+    const results =
+      data.filter(item =>
+
+        item.searchBarcodes.some(
+          barcode =>
+            barcode.endsWith(q)
+        )
+
+        ||
+
+        item.searchSku.endsWith(q)
+
+      );
+
+
+    // ========================================================
+    // NOT FOUND
+    // ========================================================
 
     if (results.length === 0) {
+
       resultEl.innerHTML = `
+
         <div style="
           text-align:center;
           color:var(--color-accent);
           font-weight:600;
-          margin-top:20px;
+          margin-top:8px;
         ">
           Not Found
         </div>
+
       `;
 
-      renderHistory();
       return;
     }
 
-    const item = results[0];
 
-    const barcodeList = item.barcodes || [];
+    // ========================================================
+    // FIRST RESULT
+    // ========================================================
 
-    let barcodeDisplay = "";
+    const item =
+      results[0];
 
-    if (barcodeList.length === 0) {
-      barcodeDisplay = "-";
-    } else if (barcodeList.length === 1) {
-      barcodeDisplay = escapeHtml(barcodeList[0]);
-    } else {
-      barcodeDisplay =
-        escapeHtml(barcodeList[0]) +
-        ` <span class="more">+${barcodeList.length - 1} more</span>`;
-    }
+
+    // ========================================================
+    // BARCODE DISPLAY
+    // ========================================================
+
+    const barcodeDisplay =
+
+      item.barcodes.length > 1
+
+        ? `
+          ${escapeHtml(item.barcodes[0])}
+          <span class="more">…</span>
+        `
+
+        : escapeHtml(
+            item.barcodes[0]
+          );
+
+
+    // ========================================================
+    // RESULT CARD
+    // ========================================================
 
     resultEl.innerHTML = `
+
       <div class="card">
 
-        <strong>${escapeHtml(item.name)}</strong><br>
+        <strong>
+          ${escapeHtml(item.name)}
+        </strong>
+
+        <br>
 
         SKU:
         ${escapeHtml(item.sku)}
+
         <br>
 
         Barcodes:
+
         <span class="barcode-list">
           ${barcodeDisplay}
         </span>
@@ -157,1048 +291,1150 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
 
       </div>
+
     `;
 
-    /* =====================================================
-       SHOW ALL BARCODES
-    ===================================================== */
 
-    const moreButton = resultEl.querySelector(".more");
+    // ========================================================
+    // EXPAND ALL BARCODES
+    // ========================================================
 
-    if (moreButton) {
-      moreButton.addEventListener("click", () => {
-        const barcodeElement =
-          resultEl.querySelector(".barcode-list");
+    const more =
+      document.querySelector(".more");
 
-        if (!barcodeElement) return;
 
-        barcodeElement.classList.add("expanded");
+    if (more) {
 
-        barcodeElement.innerHTML = barcodeList
-          .map(barcode => escapeHtml(barcode))
-          .join("<br>");
-      });
+      more.addEventListener(
+        "click",
+        () => {
+
+          const list =
+            document.querySelector(
+              ".barcode-list"
+            );
+
+
+          if (list) {
+
+            list.innerText =
+              item.barcodes.join(", ");
+
+          }
+
+        }
+      );
+
     }
 
-    /* =====================================================
-       GENERATE BARCODE
-    ===================================================== */
+
+    // ========================================================
+    // GENERATE BARCODE
+    // ========================================================
+
+    const barcodeSvg =
+      document.getElementById(
+        "barcodeSvg"
+      );
+
 
     if (
+      barcodeSvg &&
       item.primaryBarcode &&
       typeof JsBarcode !== "undefined"
     ) {
-      try {
-        JsBarcode("#barcodeSvg", item.primaryBarcode, {
-          format: "CODE128",
+
+      JsBarcode(
+        barcodeSvg,
+        item.primaryBarcode,
+        {
+          format: "code128",
           lineColor: "#000",
           width: 2.2,
           height: 100,
           displayValue: false,
           margin: 8
-        });
-      } catch (error) {
-        console.error("Barcode generation failed:", error);
-      }
+        }
+      );
+
     }
 
-    /* =====================================================
-       SAVE SEARCH AFTER 2 SECONDS
-    ===================================================== */
 
-    searchSaveTimer = setTimeout(() => {
-      saveSearchHistory({
-        query: q,
-        name: item.name || "",
-        sku: item.sku || "",
-        barcode: item.primaryBarcode || ""
-      });
+    // ========================================================
+    // SAVE SEARCH AFTER 2 SECONDS
+    // ========================================================
+
+    searchHistoryTimer =
+      setTimeout(() => {
+
+        saveSearchHistory(q);
+
+      }, 2000);
+
+
+    // Show history underneath card
+    setTimeout(() => {
 
       renderHistory();
-    }, 2000);
 
-    /* =====================================================
-       HISTORY
-    ===================================================== */
+    }, 0);
 
-    renderHistory();
   });
 
-  /* =========================================================
-     CREATE MENU
-  ========================================================= */
+});
 
-  function createMenu() {
-    // Do not create it twice
-    if (document.getElementById("easyScanMenu")) return;
 
-    const menuOverlay = document.createElement("div");
-    menuOverlay.id = "easyScanMenuOverlay";
+// ============================================================
+// FIRST EVER LOAD
+// ============================================================
 
-    menuOverlay.innerHTML = `
-      <div
-        id="easyScanMenu"
-        class="easy-scan-menu"
-        aria-hidden="true"
-      >
+function showFirstLoad() {
 
-        <div class="menu-header">
-          <strong>Easy Scan</strong>
+  const resultEl =
+    document.getElementById("result");
 
-          <button
-            id="closeEasyScanMenu"
-            aria-label="Close menu"
-          >
-            ✕
-          </button>
-        </div>
 
-        <div class="menu-content">
+  resultEl.innerHTML = `
 
-          <div class="menu-item menu-disabled">
+    <div class="loader-container">
 
-            <div>
-              <div class="menu-item-title">
-                PO Maker
-              </div>
-
-              <div class="menu-item-subtitle">
-                Coming Soon
-              </div>
-            </div>
-
-          </div>
-
-          <div class="menu-divider"></div>
-
-          <div class="menu-item app-version">
-
-            <div>
-              <div class="menu-item-title">
-                App Version
-              </div>
-
-              <div class="menu-item-subtitle">
-                ${APP_VERSION}
-              </div>
-            </div>
-
-          </div>
-
-        </div>
-
-      </div>
-    `;
-
-    document.body.appendChild(menuOverlay);
-
-    addMenuStyles();
-
-    const menu = document.getElementById("easyScanMenu");
-    const closeButton =
-      document.getElementById("closeEasyScanMenu");
-
-    // Create hamburger button
-    const header = document.querySelector("header");
-
-    if (header) {
-      const hamburger = document.createElement("button");
-
-      hamburger.id = "menuButton";
-      hamburger.type = "button";
-      hamburger.setAttribute("aria-label", "Open menu");
-      hamburger.innerHTML = "☰";
-
-      /*
-        Put hamburger before the Easy Scan title.
-      */
-      header.insertBefore(
-        hamburger,
-        header.firstElementChild
-      );
-
-      hamburger.addEventListener("click", openMenu);
-    }
-
-    function openMenu() {
-      menuOverlay.classList.add("menu-open");
-      menu.classList.add("menu-visible");
-      menu.setAttribute("aria-hidden", "false");
-    }
-
-    function closeMenu() {
-      menuOverlay.classList.remove("menu-open");
-      menu.classList.remove("menu-visible");
-      menu.setAttribute("aria-hidden", "true");
-    }
-
-    closeButton.addEventListener("click", closeMenu);
-
-    menuOverlay.addEventListener("click", event => {
-      if (event.target === menuOverlay) {
-        closeMenu();
-      }
-    });
-
-    document.addEventListener("keydown", event => {
-      if (event.key === "Escape") {
-        closeMenu();
-      }
-    });
-  }
-
-  /* =========================================================
-     MENU CSS
-  ========================================================= */
-
-  function addMenuStyles() {
-    if (document.getElementById("easyScanMenuStyles")) return;
-
-    const style = document.createElement("style");
-
-    style.id = "easyScanMenuStyles";
-
-    style.textContent = `
-
-      #menuButton {
-        background: transparent;
-        border: none;
-        font-size: 24px;
-        line-height: 1;
-        padding: 4px 8px 4px 0;
-        margin: 0;
-        color: inherit;
-        cursor: pointer;
-        flex-shrink: 0;
-      }
-
-      #easyScanMenuOverlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(0,0,0,0);
-        pointer-events: none;
-        z-index: 9998;
-        transition: background 0.25s ease;
-      }
-
-      #easyScanMenuOverlay.menu-open {
-        background: rgba(0,0,0,0.35);
-        pointer-events: auto;
-      }
-
-      .easy-scan-menu {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 280px;
-        max-width: 82vw;
-        height: 100%;
-        box-sizing: border-box;
-
-        background: var(--color-bg-light);
-        color: var(--color-text-light);
-
-        box-shadow: 4px 0 18px rgba(0,0,0,0.18);
-
-        transform: translateX(-100%);
-        transition: transform 0.25s ease;
-
-        display: flex;
-        flex-direction: column;
-      }
-
-      html[data-theme="dark"] .easy-scan-menu {
-        background: #121212;
-        color: #f0f0f0;
-      }
-
-      .easy-scan-menu.menu-visible {
-        transform: translateX(0);
-      }
-
-      .menu-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-
-        padding: 18px 16px;
-
-        border-bottom: 1px solid rgba(128,128,128,0.2);
-      }
-
-      .menu-header strong {
-        color: var(--color-accent);
-        font-size: 20px;
-      }
-
-      .menu-header button {
-        background: transparent;
-        border: none;
-        color: inherit;
-        font-size: 22px;
-        cursor: pointer;
-        padding: 4px 6px;
-      }
-
-      .menu-content {
-        padding: 10px 0;
-      }
-
-      .menu-item {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-
-        padding: 15px 18px;
-
-        box-sizing: border-box;
-      }
-
-      .menu-disabled {
-        cursor: default;
-        opacity: 0.85;
-      }
-
-      .menu-item-title {
-        font-size: 16px;
-        font-weight: 600;
-      }
-
-      .menu-item-subtitle {
-        margin-top: 4px;
-        font-size: 13px;
-        opacity: 0.65;
-      }
-
-      .menu-divider {
-        height: 1px;
-        margin: 4px 16px;
-
-        background: rgba(128,128,128,0.2);
-      }
-
-      .app-version .menu-item-subtitle {
-        color: var(--color-accent);
-        opacity: 1;
-        font-weight: 600;
-      }
-
-      html[data-theme="dark"] #easyScanMenuOverlay.menu-open {
-        background: rgba(0,0,0,0.55);
-      }
-
-    `;
-
-    document.head.appendChild(style);
-  }
-
-  /* =========================================================
-     SEARCH HISTORY
-  ========================================================= */
-
-  function getSearchHistory() {
-    try {
-      const saved =
-        localStorage.getItem(SEARCH_HISTORY_KEY);
-
-      if (!saved) return [];
-
-      const parsed = JSON.parse(saved);
-
-      return Array.isArray(parsed) ? parsed : [];
-    } catch (error) {
-      console.error("History read failed:", error);
-      return [];
-    }
-  }
-
-  function saveSearchHistory(searchItem) {
-    try {
-      let history = getSearchHistory();
-
-      const query = String(
-        searchItem.query || ""
-      ).trim();
-
-      if (!query) return;
-
-      /*
-        Remove duplicate search.
-        Comparison is case-insensitive.
-      */
-      history = history.filter(item =>
-        String(item.query || "").toLowerCase() !==
-        query.toLowerCase()
-      );
-
-      /*
-        Put newest search at the top.
-      */
-      history.unshift({
-        query: query,
-        name: String(searchItem.name || ""),
-        sku: String(searchItem.sku || ""),
-        barcode: String(searchItem.barcode || "")
-      });
-
-      /*
-        Keep only last 10.
-      */
-      history = history.slice(0, MAX_HISTORY);
-
-      localStorage.setItem(
-        SEARCH_HISTORY_KEY,
-        JSON.stringify(history)
-      );
-
-    } catch (error) {
-      console.error("History save failed:", error);
-    }
-  }
-
-  /* =========================================================
-     RENDER SEARCH HISTORY
-  ========================================================= */
-
-  function renderHistory() {
-    const resultEl =
-      document.getElementById("result");
-
-    if (!resultEl) return;
-
-    const oldHistory =
-      resultEl.querySelector(".search-history");
-
-    if (oldHistory) {
-      oldHistory.remove();
-    }
-
-    const history = getSearchHistory();
-
-    if (history.length === 0) return;
-
-    const historyContainer =
-      document.createElement("div");
-
-    historyContainer.className =
-      "search-history";
-
-    historyContainer.innerHTML = `
-      <div class="search-history-title">
-        Recent Searches
-      </div>
-
-      <div class="search-history-list"></div>
-    `;
-
-    const historyList =
-      historyContainer.querySelector(
-        ".search-history-list"
-      );
-
-    history.forEach(item => {
-      const button =
-        document.createElement("button");
-
-      button.type = "button";
-      button.className =
-        "search-history-item";
-
-      /*
-        Product name is now shown first.
-      */
-      const productName =
-        item.name || "Unknown Product";
-
-      const searchValue =
-        item.query || item.barcode || item.sku || "";
-
-      button.innerHTML = `
-        <div class="history-product-name">
-          ${escapeHtml(productName)}
-        </div>
-
-        <div class="history-search-value">
-          ${escapeHtml(searchValue)}
-        </div>
-      `;
-
-      button.addEventListener("click", () => {
-        searchBox.value = searchValue;
-
-        searchBox.dispatchEvent(
-          new Event("input", {
-            bubbles: true
-          })
-        );
-
-        searchBox.focus();
-      });
-
-      historyList.appendChild(button);
-    });
-
-    resultEl.appendChild(historyContainer);
-  }
-
-  /* =========================================================
-     FIRST LOAD
-  ========================================================= */
-
-  function showFirstLoad() {
-    resultEl.innerHTML = `
-      <div class="loader-container" aria-hidden="false">
-
-        <div class="loader-bar">
-          <div
-            id="loaderFill"
-            class="loader-fill"
-            style="width:0%"
-          ></div>
-        </div>
+      <div class="loader-bar">
 
         <div
-          id="loaderText"
-          class="loader-text"
-        >
-          Loading... 0%
-        </div>
+          id="loaderFill"
+          class="loader-fill"
+          style="width:0%"
+        ></div>
 
       </div>
-    `;
 
-    const loaderFill =
-      document.getElementById("loaderFill");
+      <div
+        id="loaderText"
+        class="loader-text"
+      >
+        Loading... 0%
+      </div>
 
-    const loaderText =
-      document.getElementById("loaderText");
+    </div>
 
-    let progress = 0;
+  `;
 
-    progressInterval = setInterval(() => {
+
+  const loaderFill =
+    document.getElementById(
+      "loaderFill"
+    );
+
+  const loaderText =
+    document.getElementById(
+      "loaderText"
+    );
+
+
+  let progress = 0;
+
+
+  const progressInterval =
+    setInterval(() => {
+
       if (progress < 92) {
-        progress = Math.min(
-          92,
-          progress + Math.random() * 6
-        );
+
+        progress =
+          Math.min(
+            92,
+            progress + Math.random() * 6
+          );
 
         loaderFill.style.width =
           progress + "%";
 
         loaderText.textContent =
           `Loading... ${Math.floor(progress)}%`;
+
       }
+
     }, 140);
 
-    downloadLatestInventory()
-      .then(result => {
 
-        clearInterval(progressInterval);
+  downloadLatestInventory()
 
-        data = result.data;
+    .then(result => {
 
-        saveInventory(data, result.version);
-
-        dataReady = true;
-        loadFailed = false;
-
-        loaderFill.style.width = "100%";
-        loaderText.textContent =
-          "Loading... 100%";
-
-        setTimeout(() => {
-          resultEl.innerHTML = `
-            <div style="
-              text-align:center;
-              color:var(--color-accent);
-              font-weight:600;
-              margin-top:8px;
-            ">
-              Ready to Search
-            </div>
-          `;
-
-          renderHistory();
-
-        }, 260);
-
-      })
-      .catch(error => {
-
-        console.error(
-          "Initial loading failed:",
-          error
-        );
-
-        clearInterval(progressInterval);
-
-        loadFailed = true;
-
-        loaderFill.style.width = "100%";
-        loaderText.textContent = "Error!";
-
-        resultEl.innerHTML = `
-          <div style="
-            text-align:center;
-            color:var(--color-accent);
-            font-weight:600;
-            margin-top:8px;
-          ">
-
-            Loading Failed,<br>
-            Check your Network Connection.<br><br>
-
-            <button
-              id="reloadBtn"
-              style="
-                background:transparent;
-                border:1px solid var(--color-accent);
-                color:var(--color-accent);
-                border-radius:8px;
-                padding:8px 16px;
-                font-size:15px;
-                font-weight:600;
-                cursor:pointer;
-              "
-            >
-              ⟳ Reload
-            </button>
-
-          </div>
-        `;
-
-        const reloadBtn =
-          document.getElementById("reloadBtn");
-
-        if (reloadBtn) {
-          reloadBtn.addEventListener(
-            "click",
-            () => location.reload()
-          );
-        }
-      });
-  }
-
-  /* =========================================================
-     BACKGROUND INVENTORY UPDATE
-  ========================================================= */
-
-  async function updateInventoryInBackground() {
-    if (!navigator.onLine) return;
-
-    try {
-      const latest =
-        await downloadLatestInventory();
-
-      const savedVersion =
-        localStorage.getItem(
-          INVENTORY_VERSION_KEY
-        );
-
-      if (
-        !savedVersion ||
-        latest.version !== savedVersion
-      ) {
-        data = latest.data;
-
-        saveInventory(
-          latest.data,
-          latest.version
-        );
-
-        dataReady = true;
-
-        /*
-          Do not disturb the current search screen.
-          New inventory will be used for the next search.
-        */
-      }
-
-    } catch (error) {
-      /*
-        Completely silent.
-
-        Cached inventory remains available
-        when the network is unavailable.
-      */
-      console.log(
-        "Background inventory update skipped."
-      );
-    }
-  }
-
-  /* =========================================================
-     DOWNLOAD GOOGLE SHEET
-  ========================================================= */
-
-  async function downloadLatestInventory() {
-    const response =
-      await fetch(
-        SHEET_URL +
-        "&nocache=" +
-        Date.now(),
-        {
-          cache: "no-store"
-        }
+      clearInterval(
+        progressInterval
       );
 
-    if (!response.ok) {
-      throw new Error(
-        "Network response was not OK"
-      );
-    }
-
-    const text =
-      await response.text();
-
-    const jsonText =
-      extractJsonFromGoogleResponse(text);
-
-    const json =
-      JSON.parse(jsonText);
-
-    const processed =
-      processSheetData(json);
-
-    const version =
-      createDataVersion(processed);
-
-    return {
-      data: processed,
-      version: version
-    };
-  }
-
-  /* =========================================================
-     PROCESS GOOGLE SHEET DATA
-  ========================================================= */
-
-  function processSheetData(json) {
-    if (
-      !json ||
-      !json.table ||
-      !Array.isArray(json.table.rows)
-    ) {
-      throw new Error(
-        "Invalid Google Sheet data"
-      );
-    }
-
-    return json.table.rows.map(row => {
-
-      const skuOriginal =
-        row.c?.[0]?.v ?? "";
-
-      const nameOriginal =
-        row.c?.[1]?.v ?? "";
-
-      const barcodeCell =
-        String(
-          row.c?.[2]?.v ?? ""
-        ).trim();
-
-      const barcodeList =
-        barcodeCell
-          ? barcodeCell
-              .split(",")
-              .map(b => b.trim())
-              .filter(Boolean)
-          : [];
-
-      return {
-        sku: String(skuOriginal),
-        name: String(nameOriginal),
-
-        barcodes: barcodeList,
-
-        primaryBarcode:
-          barcodeList[0] || "",
-
-        searchSku:
-          String(skuOriginal).toLowerCase(),
-
-        searchBarcodes:
-          barcodeList.map(
-            b => b.toLowerCase()
-          )
-      };
-    });
-  }
-
-  /* =========================================================
-     GOOGLE RESPONSE JSON EXTRACTION
-  ========================================================= */
-
-  function extractJsonFromGoogleResponse(text) {
-    const firstBrace =
-      text.indexOf("{");
-
-    const lastBrace =
-      text.lastIndexOf("}");
-
-    if (
-      firstBrace === -1 ||
-      lastBrace === -1
-    ) {
-      throw new Error(
-        "Could not find Google Sheet JSON"
-      );
-    }
-
-    return text.substring(
-      firstBrace,
-      lastBrace + 1
-    );
-  }
-
-  /* =========================================================
-     CREATE INVENTORY VERSION
-  ========================================================= */
-
-  function createDataVersion(inventory) {
-    const json =
-      JSON.stringify(inventory);
-
-    let hash = 0;
-
-    for (
-      let i = 0;
-      i < json.length;
-      i++
-    ) {
-      hash =
-        (hash << 5) -
-        hash +
-        json.charCodeAt(i);
-
-      hash |= 0;
-    }
-
-    return String(hash);
-  }
-
-  /* =========================================================
-     SAVE INVENTORY
-  ========================================================= */
-
-  function saveInventory(
-    inventory,
-    version
-  ) {
-    try {
-      localStorage.setItem(
-        INVENTORY_CACHE_KEY,
-        JSON.stringify(inventory)
-      );
-
-      localStorage.setItem(
-        INVENTORY_VERSION_KEY,
-        version
-      );
-
-    } catch (error) {
-      console.error(
-        "Inventory cache save failed:",
-        error
-      );
-    }
-  }
-
-  /* =========================================================
-     GET SAVED INVENTORY
-  ========================================================= */
-
-  function getSavedInventory() {
-    try {
-      const saved =
-        localStorage.getItem(
-          INVENTORY_CACHE_KEY
-        );
-
-      if (!saved) return null;
-
-      const parsed =
-        JSON.parse(saved);
-
-      return Array.isArray(parsed)
-        ? parsed
-        : null;
-
-    } catch (error) {
-      console.error(
-        "Inventory cache read failed:",
-        error
-      );
-
-      return null;
-    }
-  }
-
-  /* =========================================================
-     MANUAL REFRESH
-  ========================================================= */
-
-  async function reloadSheetData() {
-    const resultEl =
-      document.getElementById("result");
-
-    resultEl.innerHTML = `
-      <div class="loader-container">
-
-        <div class="loader-bar">
-          <div
-            id="loaderFill"
-            class="loader-fill"
-            style="width:0%"
-          ></div>
-        </div>
-
-        <div
-          id="loaderText"
-          class="loader-text"
-        >
-          Refreshing... 0%
-        </div>
-
-      </div>
-    `;
-
-    const loaderFill =
-      document.getElementById("loaderFill");
-
-    const loaderText =
-      document.getElementById("loaderText");
-
-    let progress = 0;
-
-    const interval =
-      setInterval(() => {
-
-        if (progress < 93) {
-
-          progress +=
-            Math.random() * 6;
-
-          progress =
-            Math.min(93, progress);
-
-          loaderFill.style.width =
-            progress + "%";
-
-          loaderText.textContent =
-            `Refreshing... ${Math.floor(progress)}%`;
-        }
-
-      }, 130);
-
-    try {
-
-      const latest =
-        await downloadLatestInventory();
-
-      const savedVersion =
-        localStorage.getItem(
-          INVENTORY_VERSION_KEY
-        );
-
-      clearInterval(interval);
 
       loaderFill.style.width =
         "100%";
 
       loaderText.textContent =
-        "Refreshing... 100%";
+        "Loading... 100%";
 
-      if (
-        latest.version !== savedVersion
-      ) {
 
-        data = latest.data;
+      data =
+        result.data;
 
-        saveInventory(
-          latest.data,
-          latest.version
-        );
 
-        dataReady = true;
+      dataReady = true;
+      loadFailed = false;
 
-        setTimeout(() => {
 
-          resultEl.innerHTML = `
-            <div style="
-              text-align:center;
-              color:var(--color-accent);
-              font-weight:600;
-              margin-top:8px;
-            ">
-              Updated — Ready to Search
-            </div>
-          `;
+      saveInventory(
+        result.data,
+        result.version
+      );
 
-          renderHistory();
 
-        }, 260);
+      setTimeout(() => {
 
-      } else {
+        resultEl.innerHTML = "";
 
-        setTimeout(() => {
+        renderHistory();
 
-          resultEl.innerHTML = `
-            <div style="
-              text-align:center;
-              color:var(--color-accent);
-              font-weight:600;
-              margin-top:8px;
-            ">
-              No Changes — Ready to Search
-            </div>
-          `;
+      }, 260);
 
-          renderHistory();
+    })
 
-        }, 260);
-      }
 
-    } catch (error) {
+    .catch(error => {
+
+      clearInterval(
+        progressInterval
+      );
+
 
       console.error(
-        "Refresh failed:",
+        "First inventory load failed:",
         error
       );
 
-      clearInterval(interval);
 
-      /*
-        Keep existing cached inventory.
-      */
+      loadFailed = true;
+      dataReady = false;
+
+
+      loaderFill.style.width =
+        "100%";
+
+      loaderText.textContent =
+        "Error!";
+
 
       resultEl.innerHTML = `
+
         <div style="
           text-align:center;
           color:var(--color-accent);
           font-weight:600;
           margin-top:8px;
         ">
-          Failed to Refresh.<br>
-          Your saved inventory is still available.
+
+          Loading Failed,<br>
+          Check your Network Connection.<br><br>
+
+          <button
+            id="reloadBtn"
+            style="
+              background:transparent;
+              border:1px solid var(--color-accent);
+              color:var(--color-accent);
+              border-radius:8px;
+              padding:8px 16px;
+              font-size:15px;
+              font-weight:600;
+              cursor:pointer;
+            "
+          >
+            ⟳ Reload
+          </button>
+
         </div>
+
       `;
 
-      renderHistory();
+
+      const reloadBtn =
+        document.getElementById(
+          "reloadBtn"
+        );
+
+
+      if (reloadBtn) {
+
+        reloadBtn.addEventListener(
+          "click",
+          () => location.reload()
+        );
+
+      }
+
+    });
+
+}
+
+
+// ============================================================
+// BACKGROUND SHEET CHECK
+// ============================================================
+
+async function updateInventoryInBackground() {
+
+  // Do absolutely nothing when offline.
+  if (!navigator.onLine) {
+
+    console.log(
+      "Easy Scan: Offline. Cache remains active."
+    );
+
+    return;
+
+  }
+
+
+  try {
+
+    const result =
+      await downloadLatestInventory();
+
+
+    const newVersion =
+      result.version;
+
+
+    const oldVersion =
+      localStorage.getItem(
+        INVENTORY_VERSION_KEY
+      );
+
+
+    // ========================================================
+    // NO CHANGE
+    // ========================================================
+
+    if (
+      oldVersion &&
+      oldVersion === newVersion
+    ) {
+
+      console.log(
+        "Easy Scan: Sheet unchanged."
+      );
+
+      return;
+
     }
+
+
+    // ========================================================
+    // SHEET CHANGED
+    // ========================================================
+
+    console.log(
+      "Easy Scan: Sheet changed. Updating cache."
+    );
+
+
+    saveInventory(
+      result.data,
+      newVersion
+    );
+
+
+    // Replace active data
+    data =
+      result.data;
+
+
+    dataReady = true;
+    loadFailed = false;
+
+
+    // IMPORTANT:
+    // Do NOT destroy the user's current result.
+    // The new inventory will be used for the next search.
+
   }
 
-  /* =========================================================
-     ESCAPE HTML
-  ========================================================= */
+  catch (error) {
 
-  function escapeHtml(value) {
-    return String(value)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
+    // NEVER break the app because Sheet is unavailable.
+
+    console.log(
+      "Easy Scan: Background update unavailable. Using cache."
+    );
+
   }
-});
-```
+
+}
+
+
+// ============================================================
+// DOWNLOAD GOOGLE SHEET
+// ============================================================
+
+async function downloadLatestInventory() {
+
+  const url =
+    SHEET_URL +
+    "&nocache=" +
+    Date.now();
+
+
+  const response =
+    await fetch(
+      url,
+      {
+        method: "GET",
+        cache: "no-store"
+      }
+    );
+
+
+  if (!response.ok) {
+
+    throw new Error(
+      "Google Sheet HTTP error: " +
+      response.status
+    );
+
+  }
+
+
+  const text =
+    await response.text();
+
+
+  const newData =
+    processSheetData(text);
+
+
+  const version =
+    createDataVersion(
+      newData
+    );
+
+
+  return {
+    data: newData,
+    version: version
+  };
+
+}
+
+
+// ============================================================
+// PROCESS GOOGLE SHEET JSON
+// ============================================================
+
+function processSheetData(txt) {
+
+  const start =
+    txt.indexOf("{");
+
+  const end =
+    txt.lastIndexOf("}");
+
+
+  if (
+    start === -1 ||
+    end === -1
+  ) {
+
+    throw new Error(
+      "Invalid Google Sheet response"
+    );
+
+  }
+
+
+  const json =
+    JSON.parse(
+      txt.substring(
+        start,
+        end + 1
+      )
+    );
+
+
+  if (
+    !json.table ||
+    !Array.isArray(
+      json.table.rows
+    )
+  ) {
+
+    throw new Error(
+      "Google Sheet rows not found"
+    );
+
+  }
+
+
+  return json.table.rows.map(
+    row => {
+
+      const skuOriginal =
+        row.c?.[0]?.v ?? "";
+
+
+      const nameOriginal =
+        row.c?.[1]?.v ?? "";
+
+
+      const barcodeCell =
+        String(
+          row.c?.[2]?.v ?? ""
+        ).trim();
+
+
+      const barcodeList =
+        barcodeCell
+
+          ? barcodeCell
+              .split(",")
+              .map(
+                b => b.trim()
+              )
+              .filter(Boolean)
+
+          : [];
+
+
+      return {
+
+        sku:
+          skuOriginal,
+
+        name:
+          nameOriginal,
+
+        barcodes:
+          barcodeList,
+
+        primaryBarcode:
+          barcodeList[0] || "",
+
+        searchSku:
+          String(
+            skuOriginal
+          ).toLowerCase(),
+
+        searchBarcodes:
+          barcodeList.map(
+            b =>
+              b.toLowerCase()
+          )
+
+      };
+
+    }
+  );
+
+}
+
+
+// ============================================================
+// SAVE INVENTORY CACHE
+// ============================================================
+
+function saveInventory(
+  inventory,
+  version
+) {
+
+  try {
+
+    localStorage.setItem(
+      INVENTORY_CACHE_KEY,
+      JSON.stringify(
+        inventory
+      )
+    );
+
+
+    localStorage.setItem(
+      INVENTORY_VERSION_KEY,
+      version
+    );
+
+
+  }
+
+  catch (error) {
+
+    console.error(
+      "Could not save inventory:",
+      error
+    );
+
+  }
+
+}
+
+
+// ============================================================
+// GET INVENTORY CACHE
+// ============================================================
+
+function getSavedInventory() {
+
+  try {
+
+    const saved =
+      localStorage.getItem(
+        INVENTORY_CACHE_KEY
+      );
+
+
+    if (!saved) {
+      return null;
+    }
+
+
+    const parsed =
+      JSON.parse(saved);
+
+
+    if (!Array.isArray(parsed)) {
+      return null;
+    }
+
+
+    return parsed;
+
+  }
+
+  catch (error) {
+
+    console.error(
+      "Inventory cache error:",
+      error
+    );
+
+
+    return null;
+
+  }
+
+}
+
+
+// ============================================================
+// INVENTORY VERSION
+// ============================================================
+
+function createDataVersion(
+  inventory
+) {
+
+  const text =
+    JSON.stringify(
+      inventory
+    );
+
+
+  let hash = 0;
+
+
+  for (
+    let i = 0;
+    i < text.length;
+    i++
+  ) {
+
+    hash =
+      (
+        (hash << 5) -
+        hash
+      ) +
+      text.charCodeAt(i);
+
+
+    hash |= 0;
+
+  }
+
+
+  return String(hash);
+
+}
+
+
+// ============================================================
+// MANUAL REFRESH
+// ============================================================
+
+async function reloadSheetData() {
+
+  const resultEl =
+    document.getElementById(
+      "result"
+    );
+
+
+  resultEl.innerHTML = `
+
+    <div class="loader-container">
+
+      <div class="loader-bar">
+
+        <div
+          id="loaderFill"
+          class="loader-fill"
+          style="width:0%"
+        ></div>
+
+      </div>
+
+      <div
+        id="loaderText"
+        class="loader-text"
+      >
+        Refreshing... 0%
+      </div>
+
+    </div>
+
+  `;
+
+
+  const loaderFill =
+    document.getElementById(
+      "loaderFill"
+    );
+
+  const loaderText =
+    document.getElementById(
+      "loaderText"
+    );
+
+
+  let progress = 0;
+
+
+  const interval =
+    setInterval(() => {
+
+      if (progress < 93) {
+
+        progress +=
+          Math.random() * 6;
+
+
+        loaderFill.style.width =
+          progress + "%";
+
+
+        loaderText.textContent =
+          `Refreshing... ${Math.floor(progress)}%`;
+
+      }
+
+    }, 130);
+
+
+  try {
+
+    const result =
+      await downloadLatestInventory();
+
+
+    clearInterval(
+      interval
+    );
+
+
+    loaderFill.style.width =
+      "100%";
+
+
+    loaderText.textContent =
+      "Refreshing... 100%";
+
+
+    const oldVersion =
+      localStorage.getItem(
+        INVENTORY_VERSION_KEY
+      );
+
+
+    // ========================================================
+    // CHANGED
+    // ========================================================
+
+    if (
+      !oldVersion ||
+      oldVersion !== result.version
+    ) {
+
+      saveInventory(
+        result.data,
+        result.version
+      );
+
+
+      data =
+        result.data;
+
+
+      dataReady = true;
+      loadFailed = false;
+
+
+      setTimeout(() => {
+
+        resultEl.innerHTML = `
+
+          <div style="
+            text-align:center;
+            color:var(--color-accent);
+            font-weight:600;
+            margin-top:8px;
+          ">
+            Inventory Updated — Ready to Search
+          </div>
+
+        `;
+
+      }, 260);
+
+    }
+
+    // ========================================================
+    // NO CHANGE
+    // ========================================================
+
+    else {
+
+      data =
+        result.data;
+
+
+      dataReady = true;
+      loadFailed = false;
+
+
+      setTimeout(() => {
+
+        resultEl.innerHTML = `
+
+          <div style="
+            text-align:center;
+            color:var(--color-accent);
+            font-weight:600;
+            margin-top:8px;
+          ">
+            No Changes — Ready to Search
+          </div>
+
+        `;
+
+      }, 260);
+
+    }
+
+  }
+
+  catch (error) {
+
+    clearInterval(
+      interval
+    );
+
+
+    console.log(
+      "Manual refresh failed. Existing cache remains available."
+    );
+
+
+    const saved =
+      getSavedInventory();
+
+
+    if (saved) {
+
+      data =
+        saved;
+
+
+      dataReady = true;
+      loadFailed = false;
+
+
+      resultEl.innerHTML = `
+
+        <div style="
+          text-align:center;
+          color:var(--color-accent);
+          font-weight:600;
+          margin-top:8px;
+        ">
+          Offline — Saved Inventory Available
+        </div>
+
+      `;
+
+    }
+
+  }
+
+}
+
+
+// ============================================================
+// SEARCH HISTORY
+// ============================================================
+
+function getSearchHistory() {
+
+  try {
+
+    const saved =
+      localStorage.getItem(
+        SEARCH_HISTORY_KEY
+      );
+
+
+    if (!saved) {
+      return [];
+    }
+
+
+    const history =
+      JSON.parse(saved);
+
+
+    return Array.isArray(history)
+      ? history
+      : [];
+
+  }
+
+  catch (error) {
+
+    return [];
+
+  }
+
+}
+
+
+// ============================================================
+// SAVE SEARCH
+// ============================================================
+
+function saveSearchHistory(
+  query
+) {
+
+  query =
+    String(query || "")
+      .trim();
+
+
+  if (!query) {
+    return;
+  }
+
+
+  let history =
+    getSearchHistory();
+
+
+  // Remove duplicate
+  history =
+    history.filter(
+      item =>
+        item.toLowerCase() !==
+        query.toLowerCase()
+    );
+
+
+  // Add newest first
+  history.unshift(query);
+
+
+  // Keep only 10
+  history =
+    history.slice(
+      0,
+      MAX_HISTORY
+    );
+
+
+  localStorage.setItem(
+    SEARCH_HISTORY_KEY,
+    JSON.stringify(history)
+  );
+
+
+  renderHistory();
+
+}
+
+
+// ============================================================
+// DISPLAY HISTORY
+// ============================================================
+
+function renderHistory() {
+
+  const resultEl =
+    document.getElementById(
+      "result"
+    );
+
+
+  if (!resultEl) {
+    return;
+  }
+
+
+  const history =
+    getSearchHistory();
+
+
+  if (history.length === 0) {
+    return;
+  }
+
+
+  // Remove old history
+  const oldHistory =
+    document.querySelector(
+      ".search-history"
+    );
+
+
+  if (oldHistory) {
+    oldHistory.remove();
+  }
+
+
+  const historyContainer =
+    document.createElement(
+      "div"
+    );
+
+
+  historyContainer.className =
+    "search-history";
+
+
+  historyContainer.innerHTML = `
+
+    <div class="search-history-title">
+      Search History
+    </div>
+
+    <div class="search-history-list">
+      ${history.map(
+        (item, index) => `
+
+          <button
+            class="search-history-item"
+            data-history-index="${index}"
+          >
+            ${escapeHtml(item)}
+          </button>
+
+        `
+      ).join("")}
+    </div>
+
+  `;
+
+
+  resultEl.appendChild(
+    historyContainer
+  );
+
+
+  // ==========================================================
+  // HISTORY CLICK
+  // ==========================================================
+
+  historyContainer
+    .querySelectorAll(
+      ".search-history-item"
+    )
+    .forEach(button => {
+
+      button.addEventListener(
+        "click",
+        () => {
+
+          const index =
+            Number(
+              button.dataset
+                .historyIndex
+            );
+
+
+          const selected =
+            history[index];
+
+
+          if (!selected) {
+            return;
+          }
+
+
+          const searchBox =
+            document.getElementById(
+              "searchBox"
+            );
+
+
+          if (!searchBox) {
+            return;
+          }
+
+
+          searchBox.value =
+            selected;
+
+
+          // Trigger the same search
+          searchBox.dispatchEvent(
+            new Event(
+              "input",
+              {
+                bubbles: true
+              }
+            )
+          );
+
+        }
+      );
+
+    });
+
+}
+
+
+// ============================================================
+// ESCAPE HTML
+// ============================================================
+
+function escapeHtml(s) {
+
+  return String(s || "")
+    .replace(
+      /[&<>"']/g,
+      function (m) {
+
+        return ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#39;"
+
+        }[m] || m);
+
+      }
+    );
+
+}
