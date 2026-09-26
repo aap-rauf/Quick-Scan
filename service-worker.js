@@ -2,7 +2,7 @@
 // EASY SCAN SERVICE WORKER
 // ============================================================
 
-const CACHE = "easy-scan-v1.0.6";
+const CACHE = "easy-scan-v1.0.7";
 
 const ASSETS = [
   "./",
@@ -23,21 +23,14 @@ self.addEventListener("install", event => {
 
   event.waitUntil(
 
-    caches.open(CACHE)
-      .then(cache => {
+    caches.open(CACHE).then(cache => {
 
-        return cache.addAll(ASSETS);
+      return cache.addAll(ASSETS);
 
-      })
+    })
 
   );
 
-  // IMPORTANT:
-  // Do NOT call skipWaiting() here.
-  //
-  // The app will ask the user:
-  // "New version available. Update now?"
-  //
 });
 
 
@@ -49,26 +42,23 @@ self.addEventListener("activate", event => {
 
   event.waitUntil(
 
-    caches.keys()
-      .then(keys => {
+    caches.keys().then(keys => {
 
-        return Promise.all(
+      return Promise.all(
 
-          keys.map(key => {
+        keys.map(key => {
 
-            if (key !== CACHE) {
+          if (key !== CACHE) {
+            return caches.delete(key);
+          }
 
-              return caches.delete(key);
+          return null;
 
-            }
+        })
 
-            return null;
+      );
 
-          })
-
-        );
-
-      })
+    })
 
   );
 
@@ -78,7 +68,7 @@ self.addEventListener("activate", event => {
 
 
 // ============================================================
-// UPDATE BUTTON FROM index.html
+// APP UPDATE BUTTON
 // ============================================================
 
 self.addEventListener("message", event => {
@@ -101,7 +91,6 @@ self.addEventListener("message", event => {
 
 self.addEventListener("fetch", event => {
 
-  // Only handle GET requests
   if (event.request.method !== "GET") {
     return;
   }
@@ -112,30 +101,17 @@ self.addEventListener("fetch", event => {
 
 
   // ========================================================
-  // GOOGLE SHEET
+  // GOOGLE SHEETS
   // ========================================================
   //
-  // NEVER cache the Google Sheet in Service Worker.
+  // DO NOT CACHE GOOGLE SHEET HERE.
   //
-  // script.js handles the inventory:
+  // script.js downloads it directly and saves
+  // the latest successful inventory in localStorage.
   //
-  // Internet:
-  //     Download latest Sheet
-  //
-  // Changed:
-  //     Save new inventory
-  //
-  // Unchanged:
-  //     Keep existing inventory
-  //
-  // Offline:
-  //     Use saved inventory
-  //
-  // ========================================================
 
   if (
-    requestURL.hostname ===
-    "docs.google.com"
+    requestURL.hostname === "docs.google.com"
   ) {
 
     return;
@@ -144,7 +120,7 @@ self.addEventListener("fetch", event => {
 
 
   // ========================================================
-  // APP + OTHER RESOURCES
+  // APP FILES / OTHER RESOURCES
   // ========================================================
 
   event.respondWith(
@@ -152,7 +128,6 @@ self.addEventListener("fetch", event => {
     caches.match(event.request)
       .then(cachedResponse => {
 
-        // Use cached version first
         if (cachedResponse) {
 
           return cachedResponse;
@@ -160,9 +135,7 @@ self.addEventListener("fetch", event => {
         }
 
 
-        // Not cached → try network
         return fetch(event.request)
-
           .then(networkResponse => {
 
             if (
@@ -175,8 +148,7 @@ self.addEventListener("fetch", event => {
             }
 
 
-            // Save successful response
-            const responseClone =
+            const copy =
               networkResponse.clone();
 
 
@@ -185,13 +157,32 @@ self.addEventListener("fetch", event => {
 
                 cache.put(
                   event.request,
-                  responseClone
+                  copy
                 );
 
               });
 
 
             return networkResponse;
+
+          })
+
+          .catch(() => {
+
+            // If the request cannot be reached,
+            // return an offline response instead
+            // of causing an unhandled failure.
+
+            return new Response(
+              "Offline",
+              {
+                status: 503,
+                headers: {
+                  "Content-Type":
+                    "text/plain"
+                }
+              }
+            );
 
           });
 
