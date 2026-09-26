@@ -1,6 +1,7 @@
 // ============================================================
 // EASY SCAN
-// Automatic Google Sheet update + offline inventory
+// CACHE-FIRST INVENTORY + BACKGROUND SHEET UPDATE
+// + LAST 10 SEARCH HISTORY
 // ============================================================
 
 const SHEET_URL =
@@ -9,26 +10,37 @@ const SHEET_URL =
 const INVENTORY_CACHE_KEY = "easyScanInventory";
 const INVENTORY_VERSION_KEY = "easyScanInventoryVersion";
 
+const SEARCH_HISTORY_KEY = "easyScanSearchHistory";
+const MAX_HISTORY = 10;
+
 let data = [];
 let dataReady = false;
 let loadFailed = false;
-let progressInterval;
+
+let searchHistoryTimer = null;
 
 
 // ============================================================
-// START APP
+// APP START
 // ============================================================
 
 document.addEventListener("DOMContentLoaded", () => {
 
-  const resultEl = document.getElementById("result");
-  const searchBox = document.getElementById("searchBox");
-  const themeToggle = document.getElementById("themeToggle");
-  const refreshButton = document.getElementById("refreshDataButton");
+  const resultEl =
+    document.getElementById("result");
+
+  const searchBox =
+    document.getElementById("searchBox");
+
+  const themeToggle =
+    document.getElementById("themeToggle");
+
+  const refreshButton =
+    document.getElementById("refreshDataButton");
 
 
   // ==========================================================
-  // THEME
+  // RESTORE THEME
   // ==========================================================
 
   const savedTheme =
@@ -40,44 +52,65 @@ document.addEventListener("DOMContentLoaded", () => {
   );
 
   if (themeToggle) {
+
     themeToggle.textContent =
-      savedTheme === "light" ? "🌙" : "☀️";
+      savedTheme === "light"
+        ? "🌙"
+        : "☀️";
 
     themeToggle.addEventListener("click", () => {
 
-      const html = document.documentElement;
+      const html =
+        document.documentElement;
 
       const current =
         html.getAttribute("data-theme");
 
       const next =
-        current === "light" ? "dark" : "light";
+        current === "light"
+          ? "dark"
+          : "light";
 
-      html.setAttribute("data-theme", next);
+      html.setAttribute(
+        "data-theme",
+        next
+      );
 
-      localStorage.setItem("theme", next);
+      localStorage.setItem(
+        "theme",
+        next
+      );
 
       themeToggle.textContent =
-        next === "light" ? "🌙" : "☀️";
+        next === "light"
+          ? "🌙"
+          : "☀️";
+
     });
+
   }
 
 
   // ==========================================================
-  // TITLE = REFRESH
+  // TITLE CLICK = MANUAL REFRESH
   // ==========================================================
 
   if (refreshButton) {
 
-    refreshButton.addEventListener("click", () => {
-      reloadSheetData();
-    });
+    refreshButton.addEventListener(
+      "click",
+      () => {
+
+        reloadSheetData();
+
+      }
+    );
 
   }
 
 
   // ==========================================================
-  // FIRST: TRY SAVED INVENTORY
+  // CACHE-FIRST START
   // ==========================================================
 
   const savedInventory =
@@ -86,31 +119,42 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (savedInventory) {
 
+    // ------------------------------------------
+    // CACHE EXISTS
+    // ------------------------------------------
+
     data = savedInventory;
 
     dataReady = true;
     loadFailed = false;
 
-    resultEl.innerHTML = `
-      <div style="
-        text-align:center;
-        color:var(--color-accent);
-        font-weight:600;
-        margin-top:8px;
-      ">
-        Ready to Search
-      </div>
-    `;
 
-    // Check Google Sheet in background
+    resultEl.innerHTML = "";
+
+
+    // Show history
+    renderHistory();
+
+
+    // ------------------------------------------
+    // IMPORTANT:
+    // Search is ready NOW.
+    // Google Sheet is checked separately.
+    // ------------------------------------------
+
     updateInventoryInBackground();
 
   }
 
   else {
 
-    // No saved data yet
-    showLoading();
+    // ------------------------------------------
+    // FIRST EVER START
+    // No cache exists yet.
+    // Internet is required only once.
+    // ------------------------------------------
+
+    showFirstLoad();
 
   }
 
@@ -121,10 +165,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
   searchBox.addEventListener("input", (e) => {
 
-    if (!dataReady) return;
+    if (!dataReady) {
+      return;
+    }
+
 
     const q =
-      e.target.value.trim().toLowerCase();
+      e.target.value
+        .trim()
+        .toLowerCase();
+
+
+    // Cancel previous history timer
+    clearTimeout(searchHistoryTimer);
 
 
     // Empty search
@@ -132,26 +185,39 @@ document.addEventListener("DOMContentLoaded", () => {
 
       resultEl.innerHTML = "";
 
+      renderHistory();
+
       return;
     }
 
 
-    // Search
-    const results = data.filter(item =>
+    // ========================================================
+    // FIND PRODUCTS
+    // ========================================================
 
-      item.searchBarcodes.some(b =>
-        b.endsWith(q)
-      ) ||
+    const results =
+      data.filter(item =>
 
-      item.searchSku.endsWith(q)
+        item.searchBarcodes.some(
+          barcode =>
+            barcode.endsWith(q)
+        )
 
-    );
+        ||
+
+        item.searchSku.endsWith(q)
+
+      );
 
 
-    // Not found
+    // ========================================================
+    // NOT FOUND
+    // ========================================================
+
     if (results.length === 0) {
 
       resultEl.innerHTML = `
+
         <div style="
           text-align:center;
           color:var(--color-accent);
@@ -160,25 +226,45 @@ document.addEventListener("DOMContentLoaded", () => {
         ">
           Not Found
         </div>
+
       `;
 
       return;
     }
 
 
-    const item = results[0];
+    // ========================================================
+    // FIRST RESULT
+    // ========================================================
 
+    const item =
+      results[0];
+
+
+    // ========================================================
+    // BARCODE DISPLAY
+    // ========================================================
 
     const barcodeDisplay =
+
       item.barcodes.length > 1
 
-        ? `${escapeHtml(item.barcodes[0])}
-           <span class="more">…</span>`
+        ? `
+          ${escapeHtml(item.barcodes[0])}
+          <span class="more">…</span>
+        `
 
-        : escapeHtml(item.barcodes[0]);
+        : escapeHtml(
+            item.barcodes[0]
+          );
 
+
+    // ========================================================
+    // RESULT CARD
+    // ========================================================
 
     resultEl.innerHTML = `
+
       <div class="card">
 
         <strong>
@@ -193,6 +279,7 @@ document.addEventListener("DOMContentLoaded", () => {
         <br>
 
         Barcodes:
+
         <span class="barcode-list">
           ${barcodeDisplay}
         </span>
@@ -204,41 +291,51 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
 
       </div>
+
     `;
 
 
     // ========================================================
-    // EXPAND BARCODE LIST
+    // EXPAND ALL BARCODES
     // ========================================================
 
     const more =
       document.querySelector(".more");
 
+
     if (more) {
 
-      more.addEventListener("click", () => {
+      more.addEventListener(
+        "click",
+        () => {
 
-        const list =
-          document.querySelector(".barcode-list");
+          const list =
+            document.querySelector(
+              ".barcode-list"
+            );
 
-        if (list) {
 
-          list.innerText =
-            item.barcodes.join(", ");
+          if (list) {
+
+            list.innerText =
+              item.barcodes.join(", ");
+
+          }
 
         }
-
-      });
+      );
 
     }
 
 
     // ========================================================
-    // BARCODE
+    // GENERATE BARCODE
     // ========================================================
 
     const barcodeSvg =
-      document.getElementById("barcodeSvg");
+      document.getElementById(
+        "barcodeSvg"
+      );
 
 
     if (
@@ -262,30 +359,53 @@ document.addEventListener("DOMContentLoaded", () => {
 
     }
 
+
+    // ========================================================
+    // SAVE SEARCH AFTER 2 SECONDS
+    // ========================================================
+
+    searchHistoryTimer =
+      setTimeout(() => {
+
+        saveSearchHistory(q);
+
+      }, 2000);
+
+
+    // Show history underneath card
+    setTimeout(() => {
+
+      renderHistory();
+
+    }, 0);
+
   });
 
 });
 
 
 // ============================================================
-// SHOW LOADING SCREEN
+// FIRST EVER LOAD
 // ============================================================
 
-function showLoading() {
+function showFirstLoad() {
 
   const resultEl =
     document.getElementById("result");
 
 
   resultEl.innerHTML = `
+
     <div class="loader-container">
 
       <div class="loader-bar">
+
         <div
           id="loaderFill"
           class="loader-fill"
           style="width:0%"
         ></div>
+
       </div>
 
       <div
@@ -296,20 +416,25 @@ function showLoading() {
       </div>
 
     </div>
+
   `;
 
 
   const loaderFill =
-    document.getElementById("loaderFill");
+    document.getElementById(
+      "loaderFill"
+    );
 
   const loaderText =
-    document.getElementById("loaderText");
+    document.getElementById(
+      "loaderText"
+    );
 
 
   let progress = 0;
 
 
-  progressInterval =
+  const progressInterval =
     setInterval(() => {
 
       if (progress < 92) {
@@ -331,63 +456,73 @@ function showLoading() {
     }, 140);
 
 
-  // First download
   downloadLatestInventory()
+
     .then(result => {
 
-      clearInterval(progressInterval);
+      clearInterval(
+        progressInterval
+      );
 
-      loaderFill.style.width = "100%";
+
+      loaderFill.style.width =
+        "100%";
+
       loaderText.textContent =
         "Loading... 100%";
 
 
-      if (result.success) {
-
-        data = result.data;
-
-        dataReady = true;
-        loadFailed = false;
+      data =
+        result.data;
 
 
-        setTimeout(() => {
+      dataReady = true;
+      loadFailed = false;
 
-          resultEl.innerHTML = `
-            <div style="
-              text-align:center;
-              color:var(--color-accent);
-              font-weight:600;
-              margin-top:8px;
-            ">
-              Ready to Search
-            </div>
-          `;
 
-        }, 260);
+      saveInventory(
+        result.data,
+        result.version
+      );
 
-      }
+
+      setTimeout(() => {
+
+        resultEl.innerHTML = "";
+
+        renderHistory();
+
+      }, 260);
 
     })
+
+
     .catch(error => {
 
-      clearInterval(progressInterval);
+      clearInterval(
+        progressInterval
+      );
+
 
       console.error(
-        "Initial inventory download failed:",
+        "First inventory load failed:",
         error
       );
 
 
-      // No inventory has ever been saved
       loadFailed = true;
       dataReady = false;
 
 
-      loaderFill.style.width = "100%";
-      loaderText.textContent = "Error!";
+      loaderFill.style.width =
+        "100%";
+
+      loaderText.textContent =
+        "Error!";
 
 
       resultEl.innerHTML = `
+
         <div style="
           text-align:center;
           color:var(--color-accent);
@@ -415,11 +550,14 @@ function showLoading() {
           </button>
 
         </div>
+
       `;
 
 
       const reloadBtn =
-        document.getElementById("reloadBtn");
+        document.getElementById(
+          "reloadBtn"
+        );
 
 
       if (reloadBtn) {
@@ -437,19 +575,20 @@ function showLoading() {
 
 
 // ============================================================
-// BACKGROUND INVENTORY UPDATE
+// BACKGROUND SHEET CHECK
 // ============================================================
 
 async function updateInventoryInBackground() {
 
-  // If browser is definitely offline, don't try.
+  // Do absolutely nothing when offline.
   if (!navigator.onLine) {
 
     console.log(
-      "Easy Scan: Offline. Using saved inventory."
+      "Easy Scan: Offline. Cache remains active."
     );
 
     return;
+
   }
 
 
@@ -459,14 +598,8 @@ async function updateInventoryInBackground() {
       await downloadLatestInventory();
 
 
-    if (!result.success) return;
-
-
-    const newData = result.data;
-
-
     const newVersion =
-      createDataVersion(newData);
+      result.version;
 
 
     const oldVersion =
@@ -476,78 +609,59 @@ async function updateInventoryInBackground() {
 
 
     // ========================================================
-    // SHEET CHANGED
+    // NO CHANGE
     // ========================================================
 
     if (
-      !oldVersion ||
-      oldVersion !== newVersion
+      oldVersion &&
+      oldVersion === newVersion
     ) {
 
-      saveInventory(
-        newData,
-        newVersion
-      );
-
-
-      data = newData;
-
-      dataReady = true;
-      loadFailed = false;
-
-
       console.log(
-        "Easy Scan: Google Sheet changed. Inventory updated."
+        "Easy Scan: Sheet unchanged."
       );
 
-
-      // Only show notification if user isn't currently
-      // looking at a search result.
-      const searchBox =
-        document.getElementById("searchBox");
-
-      const resultEl =
-        document.getElementById("result");
-
-
-      if (
-        searchBox &&
-        searchBox.value.trim() === ""
-      ) {
-
-        resultEl.innerHTML = `
-          <div style="
-            text-align:center;
-            color:var(--color-accent);
-            font-weight:600;
-            margin-top:8px;
-          ">
-            Inventory Updated — Ready to Search
-          </div>
-        `;
-
-      }
+      return;
 
     }
 
-    else {
 
-      console.log(
-        "Easy Scan: Google Sheet unchanged."
-      );
+    // ========================================================
+    // SHEET CHANGED
+    // ========================================================
 
-    }
+    console.log(
+      "Easy Scan: Sheet changed. Updating cache."
+    );
+
+
+    saveInventory(
+      result.data,
+      newVersion
+    );
+
+
+    // Replace active data
+    data =
+      result.data;
+
+
+    dataReady = true;
+    loadFailed = false;
+
+
+    // IMPORTANT:
+    // Do NOT destroy the user's current result.
+    // The new inventory will be used for the next search.
 
   }
 
   catch (error) {
 
-    // IMPORTANT:
-    // Never break the app because Google Sheet
-    // cannot be reached.
+    // NEVER break the app because Sheet is unavailable.
 
     console.log(
-      "Easy Scan: Could not check Google Sheet. Saved inventory remains active."
+      "Easy Scan: Background update unavailable. Using cache."
     );
 
   }
@@ -556,7 +670,7 @@ async function updateInventoryInBackground() {
 
 
 // ============================================================
-// DOWNLOAD LATEST GOOGLE SHEET
+// DOWNLOAD GOOGLE SHEET
 // ============================================================
 
 async function downloadLatestInventory() {
@@ -568,16 +682,19 @@ async function downloadLatestInventory() {
 
 
   const response =
-    await fetch(url, {
-      method: "GET",
-      cache: "no-store"
-    });
+    await fetch(
+      url,
+      {
+        method: "GET",
+        cache: "no-store"
+      }
+    );
 
 
   if (!response.ok) {
 
     throw new Error(
-      "Google Sheet request failed: " +
+      "Google Sheet HTTP error: " +
       response.status
     );
 
@@ -592,16 +709,22 @@ async function downloadLatestInventory() {
     processSheetData(text);
 
 
+  const version =
+    createDataVersion(
+      newData
+    );
+
+
   return {
-    success: true,
-    data: newData
+    data: newData,
+    version: version
   };
 
 }
 
 
 // ============================================================
-// PROCESS GOOGLE SHEET
+// PROCESS GOOGLE SHEET JSON
 // ============================================================
 
 function processSheetData(txt) {
@@ -627,76 +750,92 @@ function processSheetData(txt) {
 
   const json =
     JSON.parse(
-      txt.substring(start, end + 1)
+      txt.substring(
+        start,
+        end + 1
+      )
     );
 
 
   if (
     !json.table ||
-    !Array.isArray(json.table.rows)
+    !Array.isArray(
+      json.table.rows
+    )
   ) {
 
     throw new Error(
-      "Google Sheet data not found"
+      "Google Sheet rows not found"
     );
 
   }
 
 
-  return json.table.rows.map(r => {
+  return json.table.rows.map(
+    row => {
 
-    const skuOriginal =
-      r.c?.[0]?.v ?? "";
-
-    const nameOriginal =
-      r.c?.[1]?.v ?? "";
-
-    const barcodeCell =
-      String(
-        r.c?.[2]?.v ?? ""
-      ).trim();
+      const skuOriginal =
+        row.c?.[0]?.v ?? "";
 
 
-    const barcodeList =
-      barcodeCell
-
-        ? barcodeCell
-            .split(",")
-            .map(b => b.trim())
-            .filter(Boolean)
-
-        : [];
+      const nameOriginal =
+        row.c?.[1]?.v ?? "";
 
 
-    return {
+      const barcodeCell =
+        String(
+          row.c?.[2]?.v ?? ""
+        ).trim();
 
-      sku: skuOriginal,
 
-      name: nameOriginal,
+      const barcodeList =
+        barcodeCell
 
-      barcodes: barcodeList,
+          ? barcodeCell
+              .split(",")
+              .map(
+                b => b.trim()
+              )
+              .filter(Boolean)
 
-      primaryBarcode:
-        barcodeList[0] || "",
+          : [];
 
-      searchSku:
-        String(skuOriginal)
-          .toLowerCase(),
 
-      searchBarcodes:
-        barcodeList.map(
-          b => b.toLowerCase()
-        )
+      return {
 
-    };
+        sku:
+          skuOriginal,
 
-  });
+        name:
+          nameOriginal,
+
+        barcodes:
+          barcodeList,
+
+        primaryBarcode:
+          barcodeList[0] || "",
+
+        searchSku:
+          String(
+            skuOriginal
+          ).toLowerCase(),
+
+        searchBarcodes:
+          barcodeList.map(
+            b =>
+              b.toLowerCase()
+          )
+
+      };
+
+    }
+  );
 
 }
 
 
 // ============================================================
-// SAVE INVENTORY
+// SAVE INVENTORY CACHE
 // ============================================================
 
 function saveInventory(
@@ -708,13 +847,17 @@ function saveInventory(
 
     localStorage.setItem(
       INVENTORY_CACHE_KEY,
-      JSON.stringify(inventory)
+      JSON.stringify(
+        inventory
+      )
     );
+
 
     localStorage.setItem(
       INVENTORY_VERSION_KEY,
       version
     );
+
 
   }
 
@@ -731,7 +874,7 @@ function saveInventory(
 
 
 // ============================================================
-// GET SAVED INVENTORY
+// GET INVENTORY CACHE
 // ============================================================
 
 function getSavedInventory() {
@@ -765,9 +908,10 @@ function getSavedInventory() {
   catch (error) {
 
     console.error(
-      "Saved inventory error:",
+      "Inventory cache error:",
       error
     );
+
 
     return null;
 
@@ -777,13 +921,17 @@ function getSavedInventory() {
 
 
 // ============================================================
-// CREATE VERSION
+// INVENTORY VERSION
 // ============================================================
 
-function createDataVersion(inventory) {
+function createDataVersion(
+  inventory
+) {
 
   const text =
-    JSON.stringify(inventory);
+    JSON.stringify(
+      inventory
+    );
 
 
   let hash = 0;
@@ -796,8 +944,12 @@ function createDataVersion(inventory) {
   ) {
 
     hash =
-      ((hash << 5) - hash) +
+      (
+        (hash << 5) -
+        hash
+      ) +
       text.charCodeAt(i);
+
 
     hash |= 0;
 
@@ -816,10 +968,13 @@ function createDataVersion(inventory) {
 async function reloadSheetData() {
 
   const resultEl =
-    document.getElementById("result");
+    document.getElementById(
+      "result"
+    );
 
 
   resultEl.innerHTML = `
+
     <div class="loader-container">
 
       <div class="loader-bar">
@@ -840,14 +995,19 @@ async function reloadSheetData() {
       </div>
 
     </div>
+
   `;
 
 
   const loaderFill =
-    document.getElementById("loaderFill");
+    document.getElementById(
+      "loaderFill"
+    );
 
   const loaderText =
-    document.getElementById("loaderText");
+    document.getElementById(
+      "loaderText"
+    );
 
 
   let progress = 0;
@@ -858,10 +1018,13 @@ async function reloadSheetData() {
 
       if (progress < 93) {
 
-        progress += Math.random() * 6;
+        progress +=
+          Math.random() * 6;
+
 
         loaderFill.style.width =
           progress + "%";
+
 
         loaderText.textContent =
           `Refreshing... ${Math.floor(progress)}%`;
@@ -877,21 +1040,17 @@ async function reloadSheetData() {
       await downloadLatestInventory();
 
 
-    clearInterval(interval);
+    clearInterval(
+      interval
+    );
 
 
-    loaderFill.style.width = "100%";
+    loaderFill.style.width =
+      "100%";
+
 
     loaderText.textContent =
       "Refreshing... 100%";
-
-
-    const newData =
-      result.data;
-
-
-    const newVersion =
-      createDataVersion(newData);
 
 
     const oldVersion =
@@ -906,16 +1065,18 @@ async function reloadSheetData() {
 
     if (
       !oldVersion ||
-      oldVersion !== newVersion
+      oldVersion !== result.version
     ) {
 
       saveInventory(
-        newData,
-        newVersion
+        result.data,
+        result.version
       );
 
 
-      data = newData;
+      data =
+        result.data;
+
 
       dataReady = true;
       loadFailed = false;
@@ -924,6 +1085,7 @@ async function reloadSheetData() {
       setTimeout(() => {
 
         resultEl.innerHTML = `
+
           <div style="
             text-align:center;
             color:var(--color-accent);
@@ -932,6 +1094,7 @@ async function reloadSheetData() {
           ">
             Inventory Updated — Ready to Search
           </div>
+
         `;
 
       }, 260);
@@ -944,7 +1107,9 @@ async function reloadSheetData() {
 
     else {
 
-      data = newData;
+      data =
+        result.data;
+
 
       dataReady = true;
       loadFailed = false;
@@ -953,6 +1118,7 @@ async function reloadSheetData() {
       setTimeout(() => {
 
         resultEl.innerHTML = `
+
           <div style="
             text-align:center;
             color:var(--color-accent);
@@ -961,6 +1127,7 @@ async function reloadSheetData() {
           ">
             No Changes — Ready to Search
           </div>
+
         `;
 
       }, 260);
@@ -971,28 +1138,32 @@ async function reloadSheetData() {
 
   catch (error) {
 
-    clearInterval(interval);
-
-    console.error(
-      "Refresh failed:",
-      error
+    clearInterval(
+      interval
     );
 
 
-    // Keep existing inventory.
+    console.log(
+      "Manual refresh failed. Existing cache remains available."
+    );
+
+
     const saved =
       getSavedInventory();
 
 
     if (saved) {
 
-      data = saved;
+      data =
+        saved;
+
 
       dataReady = true;
       loadFailed = false;
 
 
       resultEl.innerHTML = `
+
         <div style="
           text-align:center;
           color:var(--color-accent);
@@ -1001,26 +1172,244 @@ async function reloadSheetData() {
         ">
           Offline — Saved Inventory Available
         </div>
-      `;
 
-    }
-
-    else {
-
-      resultEl.innerHTML = `
-        <div style="
-          text-align:center;
-          color:var(--color-accent);
-          font-weight:600;
-          margin-top:8px;
-        ">
-          Failed to Refresh.
-        </div>
       `;
 
     }
 
   }
+
+}
+
+
+// ============================================================
+// SEARCH HISTORY
+// ============================================================
+
+function getSearchHistory() {
+
+  try {
+
+    const saved =
+      localStorage.getItem(
+        SEARCH_HISTORY_KEY
+      );
+
+
+    if (!saved) {
+      return [];
+    }
+
+
+    const history =
+      JSON.parse(saved);
+
+
+    return Array.isArray(history)
+      ? history
+      : [];
+
+  }
+
+  catch (error) {
+
+    return [];
+
+  }
+
+}
+
+
+// ============================================================
+// SAVE SEARCH
+// ============================================================
+
+function saveSearchHistory(
+  query
+) {
+
+  query =
+    String(query || "")
+      .trim();
+
+
+  if (!query) {
+    return;
+  }
+
+
+  let history =
+    getSearchHistory();
+
+
+  // Remove duplicate
+  history =
+    history.filter(
+      item =>
+        item.toLowerCase() !==
+        query.toLowerCase()
+    );
+
+
+  // Add newest first
+  history.unshift(query);
+
+
+  // Keep only 10
+  history =
+    history.slice(
+      0,
+      MAX_HISTORY
+    );
+
+
+  localStorage.setItem(
+    SEARCH_HISTORY_KEY,
+    JSON.stringify(history)
+  );
+
+
+  renderHistory();
+
+}
+
+
+// ============================================================
+// DISPLAY HISTORY
+// ============================================================
+
+function renderHistory() {
+
+  const resultEl =
+    document.getElementById(
+      "result"
+    );
+
+
+  if (!resultEl) {
+    return;
+  }
+
+
+  const history =
+    getSearchHistory();
+
+
+  if (history.length === 0) {
+    return;
+  }
+
+
+  // Remove old history
+  const oldHistory =
+    document.querySelector(
+      ".search-history"
+    );
+
+
+  if (oldHistory) {
+    oldHistory.remove();
+  }
+
+
+  const historyContainer =
+    document.createElement(
+      "div"
+    );
+
+
+  historyContainer.className =
+    "search-history";
+
+
+  historyContainer.innerHTML = `
+
+    <div class="search-history-title">
+      Search History
+    </div>
+
+    <div class="search-history-list">
+      ${history.map(
+        (item, index) => `
+
+          <button
+            class="search-history-item"
+            data-history-index="${index}"
+          >
+            ${escapeHtml(item)}
+          </button>
+
+        `
+      ).join("")}
+    </div>
+
+  `;
+
+
+  resultEl.appendChild(
+    historyContainer
+  );
+
+
+  // ==========================================================
+  // HISTORY CLICK
+  // ==========================================================
+
+  historyContainer
+    .querySelectorAll(
+      ".search-history-item"
+    )
+    .forEach(button => {
+
+      button.addEventListener(
+        "click",
+        () => {
+
+          const index =
+            Number(
+              button.dataset
+                .historyIndex
+            );
+
+
+          const selected =
+            history[index];
+
+
+          if (!selected) {
+            return;
+          }
+
+
+          const searchBox =
+            document.getElementById(
+              "searchBox"
+            );
+
+
+          if (!searchBox) {
+            return;
+          }
+
+
+          searchBox.value =
+            selected;
+
+
+          // Trigger the same search
+          searchBox.dispatchEvent(
+            new Event(
+              "input",
+              {
+                bubbles: true
+              }
+            )
+          );
+
+        }
+      );
+
+    });
 
 }
 
