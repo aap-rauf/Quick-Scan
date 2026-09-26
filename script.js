@@ -1,8 +1,7 @@
-```javascript
 // ============================================================
 // EASY SCAN
 // CACHE-FIRST INVENTORY + BACKGROUND SHEET UPDATE
-// + LAST 10 SEARCH HISTORY WITH PRODUCT NAME
+// + LAST 10 SEARCH HISTORY
 // ============================================================
 
 const SHEET_URL =
@@ -120,20 +119,40 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (savedInventory) {
 
+    // ------------------------------------------
+    // CACHE EXISTS
+    // ------------------------------------------
+
     data = savedInventory;
 
     dataReady = true;
     loadFailed = false;
 
+
     resultEl.innerHTML = "";
 
+
+    // Show history
     renderHistory();
+
+
+    // ------------------------------------------
+    // IMPORTANT:
+    // Search is ready NOW.
+    // Google Sheet is checked separately.
+    // ------------------------------------------
 
     updateInventoryInBackground();
 
   }
 
   else {
+
+    // ------------------------------------------
+    // FIRST EVER START
+    // No cache exists yet.
+    // Internet is required only once.
+    // ------------------------------------------
 
     showFirstLoad();
 
@@ -205,9 +224,7 @@ document.addEventListener("DOMContentLoaded", () => {
           font-weight:600;
           margin-top:8px;
         ">
-
           Not Found
-
         </div>
 
       `;
@@ -233,11 +250,8 @@ document.addEventListener("DOMContentLoaded", () => {
       item.barcodes.length > 1
 
         ? `
-
           ${escapeHtml(item.barcodes[0])}
-
           <span class="more">…</span>
-
         `
 
         : escapeHtml(
@@ -348,26 +362,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // ========================================================
     // SAVE SEARCH AFTER 2 SECONDS
-    // NOW SAVES PRODUCT NAME + SEARCH VALUE
     // ========================================================
 
     searchHistoryTimer =
       setTimeout(() => {
 
-        saveSearchHistory({
-          query: q,
-          name: item.name || "",
-          sku: item.sku || "",
-          barcode: item.primaryBarcode || ""
-        });
+        saveSearchHistory(q);
 
       }, 2000);
 
 
-    // ========================================================
-    // SHOW HISTORY UNDER CARD
-    // ========================================================
-
+    // Show history underneath card
     setTimeout(() => {
 
       renderHistory();
@@ -407,9 +412,7 @@ function showFirstLoad() {
         id="loaderText"
         class="loader-text"
       >
-
         Loading... 0%
-
       </div>
 
     </div>
@@ -421,7 +424,6 @@ function showFirstLoad() {
     document.getElementById(
       "loaderFill"
     );
-
 
   const loaderText =
     document.getElementById(
@@ -529,7 +531,6 @@ function showFirstLoad() {
         ">
 
           Loading Failed,<br>
-
           Check your Network Connection.<br><br>
 
           <button
@@ -545,9 +546,7 @@ function showFirstLoad() {
               cursor:pointer;
             "
           >
-
             ⟳ Reload
-
           </button>
 
         </div>
@@ -581,6 +580,7 @@ function showFirstLoad() {
 
 async function updateInventoryInBackground() {
 
+  // Do absolutely nothing when offline.
   if (!navigator.onLine) {
 
     console.log(
@@ -641,6 +641,7 @@ async function updateInventoryInBackground() {
     );
 
 
+    // Replace active data
     data =
       result.data;
 
@@ -648,10 +649,16 @@ async function updateInventoryInBackground() {
     dataReady = true;
     loadFailed = false;
 
+
+    // IMPORTANT:
+    // Do NOT destroy the user's current result.
+    // The new inventory will be used for the next search.
+
   }
 
-
   catch (error) {
+
+    // NEVER break the app because Sheet is unavailable.
 
     console.log(
       "Easy Scan: Background update unavailable. Using cache."
@@ -851,6 +858,7 @@ function saveInventory(
       version
     );
 
+
   }
 
   catch (error) {
@@ -983,9 +991,7 @@ async function reloadSheetData() {
         id="loaderText"
         class="loader-text"
       >
-
         Refreshing... 0%
-
       </div>
 
     </div>
@@ -997,7 +1003,6 @@ async function reloadSheetData() {
     document.getElementById(
       "loaderFill"
     );
-
 
   const loaderText =
     document.getElementById(
@@ -1087,19 +1092,14 @@ async function reloadSheetData() {
             font-weight:600;
             margin-top:8px;
           ">
-
             Inventory Updated — Ready to Search
-
           </div>
 
         `;
 
-        renderHistory();
-
       }, 260);
 
     }
-
 
     // ========================================================
     // NO CHANGE
@@ -1125,21 +1125,16 @@ async function reloadSheetData() {
             font-weight:600;
             margin-top:8px;
           ">
-
             No Changes — Ready to Search
-
           </div>
 
         `;
-
-        renderHistory();
 
       }, 260);
 
     }
 
   }
-
 
   catch (error) {
 
@@ -1175,9 +1170,7 @@ async function reloadSheetData() {
           font-weight:600;
           margin-top:8px;
         ">
-
           Offline — Saved Inventory Available
-
         </div>
 
       `;
@@ -1212,58 +1205,13 @@ function getSearchHistory() {
       JSON.parse(saved);
 
 
-    if (!Array.isArray(history)) {
-      return [];
-    }
-
-
-    /*
-      Convert old history format.
-
-      Old format:
-      ["123456", "789012"]
-
-      New format:
-      [
-        {
-          query: "123456",
-          name: "Product Name",
-          barcode: "123456",
-          sku: "SKU001"
-        }
-      ]
-    */
-
-    return history.map(item => {
-
-      if (typeof item === "string") {
-
-        return {
-          query: item,
-          name: "",
-          barcode: item,
-          sku: ""
-        };
-
-      }
-
-      return {
-        query: String(item.query || ""),
-        name: String(item.name || ""),
-        barcode: String(item.barcode || ""),
-        sku: String(item.sku || "")
-      };
-
-    });
+    return Array.isArray(history)
+      ? history
+      : [];
 
   }
 
   catch (error) {
-
-    console.error(
-      "Search history read failed:",
-      error
-    );
 
     return [];
 
@@ -1277,25 +1225,12 @@ function getSearchHistory() {
 // ============================================================
 
 function saveSearchHistory(
-  searchItem
+  query
 ) {
 
-  /*
-    New search object
-  */
-
-  if (
-    !searchItem ||
-    typeof searchItem !== "object"
-  ) {
-    return;
-  }
-
-
-  const query =
-    String(
-      searchItem.query || ""
-    ).trim();
+  query =
+    String(query || "")
+      .trim();
 
 
   if (!query) {
@@ -1307,49 +1242,20 @@ function saveSearchHistory(
     getSearchHistory();
 
 
-  // ==========================================================
-  // REMOVE DUPLICATE
-  // ==========================================================
-
+  // Remove duplicate
   history =
     history.filter(
       item =>
-        String(item.query || "")
-          .toLowerCase() !==
+        item.toLowerCase() !==
         query.toLowerCase()
     );
 
 
-  // ==========================================================
-  // ADD NEWEST FIRST
-  // ==========================================================
-
-  history.unshift({
-
-    query: query,
-
-    name:
-      String(
-        searchItem.name || ""
-      ),
-
-    barcode:
-      String(
-        searchItem.barcode || ""
-      ),
-
-    sku:
-      String(
-        searchItem.sku || ""
-      )
-
-  });
+  // Add newest first
+  history.unshift(query);
 
 
-  // ==========================================================
-  // KEEP ONLY 10
-  // ==========================================================
-
+  // Keep only 10
   history =
     history.slice(
       0,
@@ -1389,23 +1295,20 @@ function renderHistory() {
     getSearchHistory();
 
 
-  // ==========================================================
-  // REMOVE OLD HISTORY FIRST
-  // ==========================================================
+  if (history.length === 0) {
+    return;
+  }
 
+
+  // Remove old history
   const oldHistory =
-    resultEl.querySelector(
+    document.querySelector(
       ".search-history"
     );
 
 
   if (oldHistory) {
     oldHistory.remove();
-  }
-
-
-  if (history.length === 0) {
-    return;
   }
 
 
@@ -1427,66 +1330,21 @@ function renderHistory() {
 
     <div class="search-history-list">
       ${history.map(
-        (item, index) => {
+        (item, index) => `
 
-          /*
-            What should be searched again?
-            Prefer the original query.
-          */
+          <button
+            class="search-history-item"
+            data-history-index="${index}"
+          >
+            ${escapeHtml(item)}
+          </button>
 
-          const searchValue =
-            item.query ||
-            item.barcode ||
-            item.sku ||
-            "";
-
-
-          /*
-            Product name.
-            Old history entries may not have
-            a product name, so show the search
-            value instead.
-          */
-
-          const productName =
-            item.name ||
-            "Previous Search";
-
-
-          return `
-
-            <button
-              class="search-history-item"
-              data-history-index="${index}"
-            >
-
-              <div
-                class="history-product-name"
-              >
-                ${escapeHtml(productName)}
-              </div>
-
-              <div
-                class="history-search-value"
-              >
-                ${escapeHtml(searchValue)}
-              </div>
-
-            </button>
-
-          `;
-
-        }
-
+        `
       ).join("")}
     </div>
 
   `;
 
-
-  // ==========================================================
-  // PUT HISTORY AFTER THE PRODUCT CARD
-  // ==========================================================
 
   resultEl.appendChild(
     historyContainer
@@ -1534,19 +1392,11 @@ function renderHistory() {
           }
 
 
-          /*
-            Search using the same barcode/SKU
-            that was originally entered.
-          */
-
           searchBox.value =
-            selected.query ||
-            selected.barcode ||
-            selected.sku ||
-            "";
+            selected;
 
 
-          // Trigger the normal search
+          // Trigger the same search
           searchBox.dispatchEvent(
             new Event(
               "input",
@@ -1588,4 +1438,3 @@ function escapeHtml(s) {
     );
 
 }
-```
