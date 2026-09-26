@@ -288,7 +288,7 @@ html[data-theme="dark"] #result {
   border: 1px solid rgba(128,128,128,0.25);
   border-radius: 8px;
   background: transparent;
-  color: inherit;
+  color: #ffd700;
   font-size: 15px;
   text-align: left;
   cursor: pointer;
