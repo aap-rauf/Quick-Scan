@@ -35,6 +35,9 @@
       />
     </div>
 
+    <!-- Recently searched -->
+    <div id="recentSearches"></div>
+
     <!-- Result area (loader + cards appear here) -->
     <div id="result" role="region" aria-live="polite"></div>
   </main>
@@ -46,28 +49,67 @@
 
   <!-- Service worker -->
   <script>
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./service-worker.js')
-    .then(reg => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker
+        .register('./service-worker.js')
+        .then(reg => {
 
-      reg.addEventListener('updatefound', () => {
-        const newWorker = reg.installing;
+          // Check for a new version
+          reg.addEventListener('updatefound', () => {
+            const newWorker = reg.installing;
 
-        newWorker.addEventListener('statechange', () => {
+            if (!newWorker) return;
+
+            newWorker.addEventListener('statechange', () => {
+
+              // First installation
+              if (
+                newWorker.state === 'installed' &&
+                !navigator.serviceWorker.controller
+              ) {
+                newWorker.postMessage({
+                  action: 'skipWaiting'
+                });
+                return;
+              }
+
+              // App update available
+              if (
+                newWorker.state === 'installed' &&
+                navigator.serviceWorker.controller
+              ) {
+                if (confirm('New version available. Update now?')) {
+                  newWorker.postMessage({
+                    action: 'skipWaiting'
+                  });
+                }
+              }
+            });
+          });
+
+          // Handle a waiting service worker
           if (
-            newWorker.state === 'installed' &&
+            reg.waiting &&
             navigator.serviceWorker.controller
           ) {
             if (confirm('New version available. Update now?')) {
-              newWorker.postMessage({ action: 'skipWaiting' });
+              reg.waiting.postMessage({
+                action: 'skipWaiting'
+              });
             }
           }
+        })
+        .catch(e => {
+          console.warn('SW register failed', e);
         });
-      });
 
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        window.location.reload();
-      });
-    });
-}
+      navigator.serviceWorker.addEventListener(
+        'controllerchange',
+        () => {
+          window.location.reload();
+        }
+      );
+    }
   </script>
+</body>
+</html>
