@@ -10,6 +10,12 @@ const SHEET_URL =
 const INVENTORY_CACHE_KEY = "easyScanInventory";
 const INVENTORY_VERSION_KEY = "easyScanInventoryVersion";
 
+// Extra offline backup.
+// This keeps a second copy of the processed inventory in Cache Storage,
+// so the app can recover even if localStorage is unavailable.
+const INVENTORY_BACKUP_CACHE = "easyScanInventoryBackup-v1";
+const INVENTORY_BACKUP_URL = "./__easy_scan_inventory_backup__.json";
+
 const SEARCH_HISTORY_KEY = "easyScanSearchHistory";
 const MAX_HISTORY = 10;
 
@@ -685,47 +691,193 @@ async function downloadLatestInventory() {
     Date.now();
 
 
-  const response =
-    await fetch(
-      url,
-      {
-        method: "GET",
-        cache: "no-store"
-      }
+  try {
+
+    const response =
+      await fetch(
+        url,
+        {
+          method: "GET",
+          cache: "no-store"
+        }
+      );
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        "Google Sheet HTTP error: " +
+        response.status
+      );
+
+    }
+
+
+    const text =
+      await response.text();
+
+
+    const newData =
+      processSheetData(text);
+
+
+    const version =
+      createDataVersion(
+        newData
+      );
+
+
+    // Save a second offline copy in Cache Storage.
+    await saveInventoryBackup(
+      newData,
+      version
     );
 
 
-  if (!response.ok) {
+    return {
+      data: newData,
+      version: version
+    };
 
-    throw new Error(
-      "Google Sheet HTTP error: " +
-      response.status
+  }
+
+  catch (networkError) {
+
+    // --------------------------------------------------------
+    // OFFLINE FALLBACK
+    // --------------------------------------------------------
+    // If Google Sheets cannot be reached, recover the last
+    // successful inventory from Cache Storage.
+    // --------------------------------------------------------
+
+    const backup =
+      await getInventoryBackup();
+
+
+    if (backup) {
+
+      console.log(
+        "Easy Scan: Using offline inventory backup."
+      );
+
+      return backup;
+
+    }
+
+
+    throw networkError;
+
+  }
+
+}
+
+
+// ============================================================
+// OFFLINE INVENTORY BACKUP
+// ============================================================
+
+async function saveInventoryBackup(
+  inventory,
+  version
+) {
+
+  try {
+
+    const cache =
+      await caches.open(
+        INVENTORY_BACKUP_CACHE
+      );
+
+    const payload =
+      JSON.stringify({
+        data: inventory,
+        version: version
+      });
+
+
+    await cache.put(
+      INVENTORY_BACKUP_URL,
+      new Response(
+        payload,
+        {
+          headers: {
+            "Content-Type":
+              "application/json"
+          }
+        }
+      )
     );
 
   }
 
+  catch (error) {
 
-  const text =
-    await response.text();
-
-
-  const newData =
-    processSheetData(text);
-
-
-  const version =
-    createDataVersion(
-      newData
+    console.log(
+      "Easy Scan: Could not save offline backup.",
+      error
     );
 
-
-  return {
-    data: newData,
-    version: version
-  };
+  }
 
 }
 
+
+async function getInventoryBackup() {
+
+  try {
+
+    const cache =
+      await caches.open(
+        INVENTORY_BACKUP_CACHE
+      );
+
+
+    const response =
+      await cache.match(
+        INVENTORY_BACKUP_URL
+      );
+
+
+    if (!response) {
+      return null;
+    }
+
+
+    const payload =
+      await response.json();
+
+
+    if (
+      !payload ||
+      !Array.isArray(payload.data)
+    ) {
+
+      return null;
+
+    }
+
+
+    return {
+      data: payload.data,
+      version: String(
+        payload.version || ""
+      )
+    };
+
+  }
+
+  catch (error) {
+
+    console.log(
+      "Easy Scan: Offline backup unavailable.",
+      error
+    );
+
+    return null;
+
+  }
+
+}
 
 // ============================================================
 // PROCESS GOOGLE SHEET JSON
