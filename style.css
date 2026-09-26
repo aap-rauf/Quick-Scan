@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=WindSong:wght@400;500&display=swap');
+
 :root {  
   --color-bg-light: #ffffff;
   --color-text-light: #333333;
@@ -11,6 +12,7 @@ html[data-theme="light"] {
   background: var(--color-bg-light);
   color: var(--color-text-light);
 }
+
 html[data-theme="dark"] {
   background: var(--color-bg-dark);
   color: var(--color-text-dark);
@@ -20,7 +22,7 @@ body {
   margin: 0;
   font-family: Arial, sans-serif;
   padding: 20px;
-  overflow: hidden;
+  overflow-x: hidden;
 }
 
 header {
@@ -71,17 +73,34 @@ main {
   max-width: 400px;
   width: 90%;
   box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-}/* make the card wrap long barcode text and limit height when expanded */
+}
+
+/* ==========================================================
+   RESULT CARD - RESPONSIVE FIT FOR ALL SCREEN SIZES
+   ========================================================== */
+
+#result {
+  margin: 20px auto;
+  padding: 0;
+  max-width: 650px;
+  width: 100%;
+  display: block;
+  background: transparent !important;
+  box-shadow: none;
+  border-radius: 0;
+  box-sizing: border-box;
+}
+
 .card {
   background: var(--card-bg, #fff);
-  color: var(--text-color);
-  padding: 16px;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  color: var(--text-color, #121212);
+  padding: 20px;
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
-  margin: 16px 0;
+  margin: 0 auto;
   text-align: left;
   white-space: normal;
   word-wrap: break-word;
@@ -90,90 +109,61 @@ main {
   overflow: hidden;
   transition: all 0.3s ease;
 }
-/* Tablets (â¥768px) */
+
+/* Media Queries for Scaling Cards on Larger Screens */
 @media (min-width: 768px) {
   .card {
-    width: 90%;
     max-width: 500px;
   }
 }
 
-/* Desktops (â¥1024px) */
 @media (min-width: 1024px) {
   .card {
-    width: 100%;
     max-width: 650px;
   }
 }
+
 .barcode-img {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-top: 10px;
+  margin-top: 15px;
 }
 
-.barcode-img img {
+.barcode-img img,
+.barcode-img svg {
   max-width: 100%;
   height: auto;
   display: block;
   object-fit: contain;
 }
 
-/* barcode-list default: wrap normally and not overflow the card */
 .barcode-list {
   display: inline-block;
   max-width: 100%;
-  white-space: normal;         /* allow wrapping */
-  overflow-wrap: anywhere;     /* break long sequences if needed */
+  white-space: normal;
+  overflow-wrap: anywhere;
   word-break: break-word;
 }
 
-/* when expanded, allow vertical scrolling if it's very long */
 .barcode-list.expanded {
   display: block;
-  max-height: 120px;           /* change height if you want taller */
+  max-height: 120px;
   overflow-y: auto;
-  padding-right: 6px;          /* space for scrollbar */
+  padding-right: 6px;
 }
 
-/* optional: visual for the clickable "â¦" */
 .more {
   cursor: pointer;
   color: #007bff;
   font-weight: 700;
   margin-left: 4px;
 }
-#result {
-  margin: 20px auto;
-  padding: 0;
-  max-width: 650px;
-  width: 100%;
-  display: block;
-  background: transparent;
-  box-shadow: none;
-  border-radius: 0;
-}
-/* dark mode card background */
-html[data-theme="dark"] #result {
-  background: rgba(30, 30, 30, 0.9);
-  color: #000000;
-}
 
-html[data-theme="dark"] #result {
-  background: #121212 !important;
-}
+/* ==========================================================
+   LOADER ANIMATION
+   ========================================================== */
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-/* Loader animation */
-.loader-container {
-  text-align: center;
-  margin-top: 50px;
-}
-
-/* New striped loading bar */
 .loader-container {
   display: flex;
   flex-direction: column;
@@ -196,9 +186,9 @@ html[data-theme="dark"] #result {
 .loader-fill {
   width: 0%;
   height: 100%;
-  background-color: #FFD700; /* solid gold */
+  background-color: #FFD700;
   border-radius: 6px;
-  transition: width 0.3s ease; /* smooth progress animation */
+  transition: width 0.3s ease;
 }
 
 .loader-text {
@@ -208,17 +198,10 @@ html[data-theme="dark"] #result {
   letter-spacing: 0.5px;
 }
 
-.loader-text {
-  color: #FFD700; /* Always yellow */
-  font-size: 18px;
-  font-weight: 600;
-}
-
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
-
 
 #signature {
   position: fixed;
@@ -231,28 +214,24 @@ html[data-theme="dark"] #result {
   pointer-events: none;
   user-select: none;
   transition: color 0.3s ease, opacity 0.3s ease;
+  animation: fadeIn 1s ease-in-out;
 }
 
-/* Signature color for light and dark themes */
 [data-theme="light"] {
   --signature-color: #FFD700;
 }
 
 [data-theme="dark"] {
-  --signature-color: #FFD700; /* gold for dark mode */
+  --signature-color: #FFD700;
 }
 
-/* Optional fade-in animation */
-#signature {
-  animation: fadeIn 1s ease-in-out;
-}
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 0.8; }
 }
 
 /* ==========================================================
-   SEARCH HISTORY - ALWAYS BELOW RESULT CARD
+   SEARCH HISTORY - GOLD FONT FOR BOTH LIGHT & DARK THEMES
    ========================================================== */
 
 .search-history {
@@ -285,10 +264,10 @@ html[data-theme="dark"] #result {
   width: 100%;
   box-sizing: border-box;
   padding: 10px 12px;
-  border: 1px solid rgba(128,128,128,0.25);
+  border: 1px solid rgba(255, 215, 0, 0.35);
   border-radius: 8px;
   background: transparent;
-  color: #ffd700;
+  color: #FFD700 !important; /* Gold text in light & dark modes */
   font-size: 15px;
   text-align: left;
   cursor: pointer;
@@ -299,5 +278,5 @@ html[data-theme="dark"] #result {
 }
 
 html[data-theme="dark"] .search-history-item {
-  border-color: rgba(255, 215, 0, 0.3); /* Optional: subtle gold border */
+  border-color: rgba(255, 215, 0, 0.4);
 }
