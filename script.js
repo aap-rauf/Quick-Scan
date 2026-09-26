@@ -7,7 +7,7 @@ const INVENTORY_VERSION_KEY = "easyScanInventoryVersion";
 const SEARCH_HISTORY_KEY = "easyScanSearchHistory";
 
 const MAX_HISTORY = 10;
-const APP_VERSION = "1.0.9";
+const APP_VERSION = "1.1.0";
 
 let data = [];
 let dataReady = false;
