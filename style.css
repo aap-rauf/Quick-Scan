@@ -101,7 +101,7 @@ main {
 /* Desktops (â¥1024px) */
 @media (min-width: 1024px) {
   .card {
-    width: 85%;
+    width: 100%;
     max-width: 650px;
   }
 }
