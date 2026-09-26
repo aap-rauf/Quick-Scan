@@ -364,14 +364,18 @@ document.addEventListener("DOMContentLoaded", () => {
     // SAVE SEARCH AFTER 2 SECONDS
     // ========================================================
 
-    searchHistoryTimer =
-      setTimeout(() => {
+  searchHistoryTimer =
+  setTimeout(() => {
 
-        saveSearchHistory(q);
+    saveSearchHistory(
+      q,
+      item.name,
+      item.primaryBarcode,
+      item.sku
+    );
 
-      }, 2000);
-
-
+  }, 2000);
+    
     // Show history underneath card
     setTimeout(() => {
 
@@ -1225,35 +1229,56 @@ function getSearchHistory() {
 // ============================================================
 
 function saveSearchHistory(
-  query
+  query,
+  productName,
+  barcode,
+  sku
 ) {
 
   query =
     String(query || "")
       .trim();
 
-
   if (!query) {
     return;
   }
 
-
   let history =
     getSearchHistory();
 
-
-  // Remove duplicate
+  // Convert old history strings to objects
   history =
-    history.filter(
-      item =>
-        item.toLowerCase() !==
-        query.toLowerCase()
+    history.map(item => {
+
+      if (typeof item === "string") {
+
+        return {
+          query: item,
+          name: "",
+          barcode: "",
+          sku: ""
+        };
+
+      }
+
+      return item;
+
+    });
+
+  // Remove duplicate search
+  history =
+    history.filter(item =>
+      String(item.query || "").toLowerCase() !==
+      query.toLowerCase()
     );
 
-
   // Add newest first
-  history.unshift(query);
-
+  history.unshift({
+    query: query,
+    name: String(productName || ""),
+    barcode: String(barcode || ""),
+    sku: String(sku || "")
+  });
 
   // Keep only 10
   history =
@@ -1262,12 +1287,10 @@ function saveSearchHistory(
       MAX_HISTORY
     );
 
-
   localStorage.setItem(
     SEARCH_HISTORY_KEY,
     JSON.stringify(history)
   );
-
 
   renderHistory();
 
@@ -1285,20 +1308,16 @@ function renderHistory() {
       "result"
     );
 
-
   if (!resultEl) {
     return;
   }
 
-
   const history =
     getSearchHistory();
-
 
   if (history.length === 0) {
     return;
   }
-
 
   // Remove old history
   const oldHistory =
@@ -1306,21 +1325,17 @@ function renderHistory() {
       ".search-history"
     );
 
-
   if (oldHistory) {
     oldHistory.remove();
   }
-
 
   const historyContainer =
     document.createElement(
       "div"
     );
 
-
   historyContainer.className =
     "search-history";
-
 
   historyContainer.innerHTML = `
 
@@ -1329,22 +1344,47 @@ function renderHistory() {
     </div>
 
     <div class="search-history-list">
+
       ${history.map(
-        (item, index) => `
+        (item, index) => {
 
-          <button
-            class="search-history-item"
-            data-history-index="${index}"
-          >
-            ${escapeHtml(item)}
-          </button>
+          // Support old history
+          if (typeof item === "string") {
+            item = {
+              query: item,
+              name: ""
+            };
+          }
 
-        `
+          return `
+
+            <button
+              class="search-history-item"
+              data-history-index="${index}"
+            >
+
+              <span class="history-product-name">
+                ${escapeHtml(
+                  item.name || "Previous Search"
+                )}
+              </span>
+
+              <span class="history-search-value">
+                ${escapeHtml(
+                  item.query || ""
+                )}
+              </span>
+
+            </button>
+
+          `;
+
+        }
       ).join("")}
+
     </div>
 
   `;
-
 
   resultEl.appendChild(
     historyContainer
@@ -1371,32 +1411,30 @@ function renderHistory() {
                 .historyIndex
             );
 
-
           const selected =
             history[index];
-
 
           if (!selected) {
             return;
           }
-
 
           const searchBox =
             document.getElementById(
               "searchBox"
             );
 
-
           if (!searchBox) {
             return;
           }
 
+          const searchValue =
+            typeof selected === "string"
+              ? selected
+              : selected.query;
 
           searchBox.value =
-            selected;
+            searchValue;
 
-
-          // Trigger the same search
           searchBox.dispatchEvent(
             new Event(
               "input",
@@ -1412,7 +1450,6 @@ function renderHistory() {
     });
 
 }
-
 
 // ============================================================
 // ESCAPE HTML
