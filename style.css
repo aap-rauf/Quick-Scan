@@ -280,3 +280,14 @@ main {
 html[data-theme="dark"] .search-history-item {
   border-color: rgba(255, 215, 0, 0.4);
 }
+.history-product-name {
+  font-weight: 600;
+  font-size: 15px;
+  color: inherit;
+}
+
+.history-search-value {
+  margin-top: 3px;
+  font-size: 13px;
+  opacity: 0.65;
+}
