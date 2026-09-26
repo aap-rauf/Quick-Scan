@@ -148,11 +148,10 @@ main {
   padding: 0;
   max-width: 650px;
   width: 100%;
-  display: flex;
-  justify-content: center;
-  background: transparent;   /* â remove white background */
-  box-shadow: none;          /* â remove shadow */
-  border-radius: 0;          /* â remove round edges */
+  display: block;
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
 }
 /* dark mode card background */
 html[data-theme="dark"] #result {
@@ -251,16 +250,19 @@ html[data-theme="dark"] #result {
   from { opacity: 0; }
   to { opacity: 0.8; }
 }
+
 /* ==========================================================
-   SEARCH HISTORY
+   SEARCH HISTORY - ALWAYS BELOW RESULT CARD
    ========================================================== */
 
 .search-history {
+  display: block;
   width: 100%;
   max-width: 650px;
-  margin: 18px auto 70px auto;
+  margin: 20px auto 70px auto;
   padding: 0;
   box-sizing: border-box;
+  clear: both;
 }
 
 .search-history-title {
@@ -275,9 +277,11 @@ html[data-theme="dark"] #result {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  width: 100%;
 }
 
 .search-history-item {
+  display: block;
   width: 100%;
   box-sizing: border-box;
   padding: 10px 12px;
