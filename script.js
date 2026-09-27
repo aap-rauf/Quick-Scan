@@ -271,32 +271,33 @@ document.addEventListener("DOMContentLoaded", () => {
 
     resultEl.innerHTML = `
 
-      <div class="card">
-
-        <strong>
+      <article class="card product-card">
+        <h2 class="product-name">
           ${escapeHtml(item.name)}
-        </strong>
+        </h2>
 
-        <br>
+        <dl class="product-details">
+          <div class="product-detail">
+            <dt>SKU</dt>
+            <dd>${escapeHtml(item.sku)}</dd>
+          </div>
 
-        SKU:
-        ${escapeHtml(item.sku)}
-
-        <br>
-
-        Barcodes:
-
-        <span class="barcode-list">
-          ${barcodeDisplay}
-        </span>
-
-        <br><br>
+          <div class="product-detail">
+            <dt>Barcodes</dt>
+            <dd>
+              <span class="barcode-list">${barcodeDisplay}</span>
+            </dd>
+          </div>
+        </dl>
 
         <div class="barcode-img">
-          <svg id="barcodeSvg"></svg>
+          <svg
+            id="barcodeSvg"
+            role="img"
+            aria-label="Barcode for ${escapeHtml(item.primaryBarcode)}"
+          ></svg>
         </div>
-
-      </div>
+      </article>
 
     `;
 
