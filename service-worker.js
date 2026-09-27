@@ -141,54 +141,58 @@ self.addEventListener("fetch", event => {
 
     event.respondWith(
 
-      fetch(event.request)
+      caches.match("./index.html")
 
-        .then(networkResponse => {
+        .then(cachedPage => {
 
-          // Keep the latest successful app page cached.
-          if (
-            networkResponse &&
-            networkResponse.status === 200
-          ) {
-
-            const copy =
-              networkResponse.clone();
-
-            caches.open(CACHE)
-              .then(cache => {
-                cache.put(
-                  "./index.html",
-                  copy
-                );
-              });
-
-          }
-
-          return networkResponse;
-
-        })
-
-        .catch(async () => {
-
-          const cachedPage =
-            await caches.match(
-              "./index.html"
-            );
-
+          // IMPORTANT:
+          // If the app was opened before, return the cached page
+          // immediately. Do NOT wait for a network timeout.
           if (cachedPage) {
             return cachedPage;
           }
 
-          return new Response(
-            "Easy Scan is not available offline yet. Open it once while online.",
-            {
-              status: 503,
-              headers: {
-                "Content-Type":
-                  "text/plain; charset=utf-8"
+          // First-ever load still uses the network.
+          return fetch(event.request)
+
+            .then(networkResponse => {
+
+              if (
+                networkResponse &&
+                networkResponse.status === 200
+              ) {
+
+                const copy =
+                  networkResponse.clone();
+
+                caches.open(CACHE)
+                  .then(cache => {
+                    cache.put(
+                      "./index.html",
+                      copy
+                    );
+                  });
+
               }
-            }
-          );
+
+              return networkResponse;
+
+            })
+
+            .catch(() => {
+
+              return new Response(
+                "Easy Scan is not available offline yet. Open it once while online.",
+                {
+                  status: 503,
+                  headers: {
+                    "Content-Type":
+                      "text/plain; charset=utf-8"
+                  }
+                }
+              );
+
+            });
 
         })
 
@@ -197,7 +201,6 @@ self.addEventListener("fetch", event => {
     return;
 
   }
-
 
   // ========================================================
   // APP FILES / OTHER RESOURCES
