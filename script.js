@@ -257,7 +257,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         ? `
           ${escapeHtml(item.barcodes[0])}
-          <span class="more">…</span>
+          <button type="button" class="more" aria-label="Show all barcodes">…</button>
         `
 
         : escapeHtml(
