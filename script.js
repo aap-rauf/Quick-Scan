@@ -119,49 +119,38 @@ document.addEventListener("DOMContentLoaded", () => {
   // CACHE-FIRST START
   // ==========================================================
 
-  const savedInventory =
-    getSavedInventory();
-
-
-  if (savedInventory) {
-
-    // ------------------------------------------
-    // CACHE EXISTS
-    // ------------------------------------------
-
-    data = savedInventory;
-
+  const activateInventory = (inventory) => {
+    data = inventory;
     dataReady = true;
     loadFailed = false;
-
-
     resultEl.innerHTML = "";
-
-
-    // Show history
     renderHistory();
-
-
-    // ------------------------------------------
-    // IMPORTANT:
-    // Search is ready NOW.
-    // Google Sheet is checked separately.
-    // ------------------------------------------
-
     updateInventoryInBackground();
 
-  }
+    // Keep a query entered while Cache Storage was loading.
+    if (searchBox.value.trim()) {
+      searchBox.dispatchEvent(
+        new Event("input", { bubbles: true })
+      );
+    }
+  };
 
-  else {
+  const savedInventory = getSavedInventory();
 
-    // ------------------------------------------
-    // FIRST EVER START
-    // No cache exists yet.
-    // Internet is required only once.
-    // ------------------------------------------
+  if (savedInventory) {
+    activateInventory(savedInventory);
+  } else {
+    // localStorage can be unavailable or exceed its quota even when
+    // Cache Storage still has the last successful inventory.
+    getInventoryBackup().then(backup => {
+      if (backup && Array.isArray(backup.data)) {
+        saveInventory(backup.data, backup.version);
+        activateInventory(backup.data);
+        return;
+      }
 
-    showFirstLoad();
-
+      showFirstLoad();
+    });
   }
 
 
