@@ -261,19 +261,23 @@ document.addEventListener("DOMContentLoaded", () => {
     resultEl.innerHTML = `
 
       <article class="card product-card">
-        <h2 class="product-name">${escapeHtml(item.name)}</h2>
+        <h2 class="product-name">
+          ${escapeHtml(item.name)}
+        </h2>
 
-        <div class="product-details">
-          <p class="product-line">
-            <span class="product-label">SKU:</span>
-            ${escapeHtml(item.sku)}
-          </p>
+        <dl class="product-details">
+          <div class="product-detail">
+            <dt>SKU</dt>
+            <dd>${escapeHtml(item.sku)}</dd>
+          </div>
 
-          <p class="product-line">
-            <span class="product-label">Barcodes:</span>
-            <span class="barcode-list">${barcodeDisplay}</span>
-          </p>
-        </div>
+          <div class="product-detail">
+            <dt>Barcodes</dt>
+            <dd>
+              <span class="barcode-list">${barcodeDisplay}</span>
+            </dd>
+          </div>
+        </dl>
 
         <div class="barcode-img">
           <svg
@@ -282,7 +286,7 @@ document.addEventListener("DOMContentLoaded", () => {
             aria-label="Barcode for ${escapeHtml(item.primaryBarcode)}"
           ></svg>
         </div>
-      </article>ticle>
+      </article>
 
     `;
 
@@ -343,7 +347,7 @@ document.addEventListener("DOMContentLoaded", () => {
           format: "code128",
           lineColor: "#000",
           width: 2.2,
-          height: 150,
+          height: 100,
           displayValue: false,
           margin: 8
         }
