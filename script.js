@@ -119,49 +119,38 @@ document.addEventListener("DOMContentLoaded", () => {
   // CACHE-FIRST START
   // ==========================================================
 
-  const savedInventory =
-    getSavedInventory();
-
-
-  if (savedInventory) {
-
-    // ------------------------------------------
-    // CACHE EXISTS
-    // ------------------------------------------
-
-    data = savedInventory;
-
+  const activateInventory = (inventory) => {
+    data = inventory;
     dataReady = true;
     loadFailed = false;
-
-
     resultEl.innerHTML = "";
-
-
-    // Show history
     renderHistory();
-
-
-    // ------------------------------------------
-    // IMPORTANT:
-    // Search is ready NOW.
-    // Google Sheet is checked separately.
-    // ------------------------------------------
-
     updateInventoryInBackground();
 
-  }
+    // Keep a query entered while Cache Storage was loading.
+    if (searchBox.value.trim()) {
+      searchBox.dispatchEvent(
+        new Event("input", { bubbles: true })
+      );
+    }
+  };
 
-  else {
+  const savedInventory = getSavedInventory();
 
-    // ------------------------------------------
-    // FIRST EVER START
-    // No cache exists yet.
-    // Internet is required only once.
-    // ------------------------------------------
+  if (savedInventory) {
+    activateInventory(savedInventory);
+  } else {
+    // localStorage can be unavailable or exceed its quota even when
+    // Cache Storage still has the last successful inventory.
+    getInventoryBackup().then(backup => {
+      if (backup && Array.isArray(backup.data)) {
+        saveInventory(backup.data, backup.version);
+        activateInventory(backup.data);
+        return;
+      }
 
-    showFirstLoad();
-
+      showFirstLoad();
+    });
   }
 
 
@@ -257,7 +246,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         ? `
           ${escapeHtml(item.barcodes[0])}
-          <span class="more">…</span>
+          <button type="button" class="more" aria-label="Show all barcodes">…</button>
         `
 
         : escapeHtml(
@@ -271,32 +260,33 @@ document.addEventListener("DOMContentLoaded", () => {
 
     resultEl.innerHTML = `
 
-      <div class="card">
-
-        <strong>
+      <article class="card product-card">
+        <h2 class="product-name">
           ${escapeHtml(item.name)}
-        </strong>
+        </h2>
 
-        <br>
+        <dl class="product-details">
+          <div class="product-detail">
+            <dt>SKU</dt>
+            <dd>${escapeHtml(item.sku)}</dd>
+          </div>
 
-        SKU:
-        ${escapeHtml(item.sku)}
-
-        <br>
-
-        Barcodes:
-
-        <span class="barcode-list">
-          ${barcodeDisplay}
-        </span>
-
-        <br><br>
+          <div class="product-detail">
+            <dt>Barcodes</dt>
+            <dd>
+              <span class="barcode-list">${barcodeDisplay}</span>
+            </dd>
+          </div>
+        </dl>
 
         <div class="barcode-img">
-          <svg id="barcodeSvg"></svg>
+          <svg
+            id="barcodeSvg"
+            role="img"
+            aria-label="Barcode for ${escapeHtml(item.primaryBarcode)}"
+          ></svg>
         </div>
-
-      </div>
+      </article>
 
     `;
 
