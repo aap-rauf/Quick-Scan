@@ -178,8 +178,8 @@ main {
 
 .card {
   box-sizing: border-box;
-  width: 100%;
-  max-width: 100%;
+  width: 95%;
+  max-width: 750px;
   margin: 0 auto;
   padding: clamp(18px, 4vw, 24px);
   overflow: hidden;
@@ -196,7 +196,7 @@ main {
 .product-card {
   min-height: clamp(350px, 32vw, 383px);
   padding: 28px 30px 30px;
-  border: 0;
+  border: 1px;
   border-radius: 24px;
   background: #ffffff;
   color: #111111;
@@ -206,7 +206,7 @@ main {
 .product-name {
   margin: 0;
   color: #111111;
-  font-size: 24px;
+  font-size: 22px;
   font-weight: 700;
   line-height: 1.25;
 }
@@ -219,7 +219,7 @@ main {
 .product-line {
   margin: 0;
   color: #111111;
-  font-size: 24px;
+  font-size: 18px;
   font-weight: 400;
   line-height: 1.25;
   overflow-wrap: anywhere;
