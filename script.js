@@ -260,7 +260,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     resultEl.innerHTML = `
 
-      <article class="card product-card">
+      <div class="card product-card">
         <h2 class="product-name">${escapeHtml(item.name)}</h2>
 
         <div class="product-details">
@@ -282,7 +282,7 @@ document.addEventListener("DOMContentLoaded", () => {
             aria-label="Barcode for ${escapeHtml(item.primaryBarcode)}"
           ></svg>
         </div>
-      </article>ticle>
+      </div>
 
     `;
 
