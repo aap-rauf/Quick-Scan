@@ -18,6 +18,7 @@ const INVENTORY_BACKUP_URL = "./__easy_scan_inventory_backup__.json";
 
 const SEARCH_HISTORY_KEY = "easyScanSearchHistory";
 const MAX_HISTORY = 10;
+const BARCODE_BAR_WIDTH = 2.2; // Lower to narrow bars; raise to widen them.
 
 let data = [];
 let dataReady = false;
@@ -240,18 +241,22 @@ document.addEventListener("DOMContentLoaded", () => {
     // BARCODE DISPLAY
     // ========================================================
 
-    const barcodeDisplay =
+    const barcodes = Array.isArray(item.barcodes)
+      ? item.barcodes
+          .filter(barcode => barcode !== null && barcode !== undefined && String(barcode).trim())
+          .map(String)
+      : [];
 
-      item.barcodes.length > 1
+    if (barcodes.length === 0 && item.primaryBarcode) {
+      barcodes.push(String(item.primaryBarcode));
+    }
 
-        ? `
-          ${escapeHtml(item.barcodes[0])}
-          <button type="button" class="more" aria-label="Show all barcodes">…</button>
-        `
-
-        : escapeHtml(
-            item.barcodes[0]
-          );
+    const barcodeDisplay = `
+      <span class="barcode-values" id="barcode-values">${escapeHtml(barcodes[0] || "Unavailable")}</span>
+      ${barcodes.length > 1
+        ? `<button type="button" class="more" aria-controls="barcode-values" aria-expanded="false" aria-label="Show all ${barcodes.length} barcodes">+${barcodes.length - 1} more</button>`
+        : ""}
+    `;
 
 
     // ========================================================
@@ -275,48 +280,66 @@ document.addEventListener("DOMContentLoaded", () => {
           </p>
         </div>
 
-        <div class="barcode-img">
-          <svg
-            id="barcodeSvg"
-            role="img"
-            aria-label="Barcode for ${escapeHtml(item.primaryBarcode)}"
-          ></svg>
-        </div>
+        ${item.primaryBarcode ? `
+          <div class="barcode-img">
+            <svg
+              id="barcodeSvg"
+              role="img"
+              aria-label="Barcode for ${escapeHtml(item.primaryBarcode)}"
+            ></svg>
+          </div>
+        ` : ""}
       </div>
 
     `;
 
 
     // ========================================================
-    // EXPAND ALL BARCODES
+    // EXPAND / COLLAPSE ALL BARCODES
     // ========================================================
 
+    const barcodeList =
+      resultEl.querySelector(".barcode-list");
+
+    const barcodeValues =
+      barcodeList?.querySelector(".barcode-values");
+
     const more =
-      document.querySelector(".more");
+      barcodeList?.querySelector(".more");
 
+    if (more && barcodeValues) {
+      const firstBarcode =
+        barcodes[0] || "";
 
-    if (more) {
+      more.addEventListener("click", () => {
+        const expanded =
+          more.getAttribute("aria-expanded") === "true";
 
-      more.addEventListener(
-        "click",
-        () => {
+        barcodeValues.textContent = expanded
+          ? firstBarcode
+          : barcodes.join(", ");
 
-          const list =
-            document.querySelector(
-              ".barcode-list"
-            );
+        more.setAttribute(
+          "aria-expanded",
+          String(!expanded)
+        );
 
+        more.setAttribute(
+          "aria-label",
+          expanded
+            ? `Show all ${barcodes.length} barcodes`
+            : "Show fewer barcodes"
+        );
 
-          if (list) {
+        more.textContent = expanded
+          ? `+${barcodes.length - 1} more`
+          : "Show less";
 
-            list.innerText =
-              item.barcodes.join(", ");
-
-          }
-
-        }
-      );
-
+        barcodeList.classList.toggle(
+          "expanded",
+          !expanded
+        );
+      });
     }
 
 
@@ -342,7 +365,7 @@ document.addEventListener("DOMContentLoaded", () => {
         {
           format: "code128",
           lineColor: "#000",
-          width: 2.2,
+          width: BARCODE_BAR_WIDTH,
           height: 150,
           displayValue: false,
           margin: 8
