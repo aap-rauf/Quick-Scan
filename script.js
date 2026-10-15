@@ -18,7 +18,7 @@ const INVENTORY_BACKUP_URL = "./__easy_scan_inventory_backup__.json";
 
 const SEARCH_HISTORY_KEY = "easyScanSearchHistory";
 const MAX_HISTORY = 10;
-const BARCODE_BAR_WIDTH = 2.2; // Lower to narrow bars; raise to widen them.
+const BARCODE_BAR_WIDTH = 4; // Lower to narrow bars; raise to widen them.
 
 let data = [];
 let dataReady = false;
