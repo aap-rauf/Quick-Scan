@@ -565,7 +565,8 @@ main {
   header,
   main,
   #result {
-    max-width: 1320px;
+    width: 100%;
+    max-width: none;
   }
 
   h1 {
