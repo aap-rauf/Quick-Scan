@@ -559,11 +559,24 @@ main {
 
 @media (min-width: 1024px) {
   body {
-    padding: clamp(32px, 4vw, 56px);
+    padding: 0;
   }
 
-  header,
-  main,
+  header {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: none;
+    padding: clamp(24px, 2vw, 36px) clamp(20px, 2vw, 36px) 20px;
+  }
+
+  main {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: none;
+    margin-top: 30px;
+    padding: 0 clamp(20px, 2vw, 36px);
+  }
+
   #result {
     width: 100%;
     max-width: none;
@@ -577,9 +590,7 @@ main {
     padding-bottom: 20px;
   }
 
-  main {
-    margin-top: 30px;
-  }
+
 
   #searchBox {
     min-height: 62px;
