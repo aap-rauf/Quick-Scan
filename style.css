@@ -50,6 +50,9 @@ body {
 }
 
 header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -57,6 +60,7 @@ header {
   margin: 0 auto;
   padding-bottom: 14px;
   border-bottom: 1px solid var(--border);
+  background: var(--page-bg);
 }
 
 h1 {
@@ -117,7 +121,12 @@ main {
 }
 
 .search-wrap {
+  position: sticky;
+  top: 68px;
+  z-index: 19;
   width: 100%;
+  padding-bottom: 12px;
+  background: var(--page-bg);
 }
 
 #searchBox {
@@ -551,6 +560,11 @@ main {
     font-size: 18px;
   }
 
+  .search-wrap {
+    top: 88px;
+    padding-bottom: 16px;
+  }
+
   #themeToggle {
     width: 46px;
     height: 46px;
@@ -563,10 +577,14 @@ main {
   }
 
   header {
+    position: sticky;
+    top: 0;
+    z-index: 20;
     box-sizing: border-box;
     width: 100%;
     max-width: none;
     padding: clamp(24px, 2vw, 36px) clamp(20px, 2vw, 36px) 20px;
+    background: var(--page-bg);
   }
 
   main {
@@ -575,6 +593,14 @@ main {
     max-width: none;
     margin-top: 30px;
     padding: 0 clamp(20px, 2vw, 36px);
+  }
+
+  .search-wrap {
+    position: sticky;
+    top: 96px;
+    z-index: 19;
+    padding-bottom: 16px;
+    background: var(--page-bg);
   }
 
   #result {
