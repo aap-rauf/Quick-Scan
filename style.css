@@ -563,10 +563,14 @@ main {
   }
 
   header {
+    position: sticky;
+    top: 0;
+    z-index: 20;
     box-sizing: border-box;
     width: 100%;
     max-width: none;
     padding: clamp(24px, 2vw, 36px) clamp(20px, 2vw, 36px) 20px;
+    background: var(--page-bg);
   }
 
   main {
@@ -575,6 +579,14 @@ main {
     max-width: none;
     margin-top: 30px;
     padding: 0 clamp(20px, 2vw, 36px);
+  }
+
+  .search-wrap {
+    position: sticky;
+    top: 96px;
+    z-index: 19;
+    padding-bottom: 16px;
+    background: var(--page-bg);
   }
 
   #result {
