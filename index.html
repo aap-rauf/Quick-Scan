@@ -18,12 +18,12 @@
 </head>
 
 <body>
-  <header>
-    <h1 id="refreshDataButton">Easy Scan</h1>
-    <button id="themeToggle" aria-label="Toggle theme">🌙</button>
-  </header>
+  <div class="app-toolbar">
+    <header>
+      <h1 id="refreshDataButton">Easy Scan</h1>
+      <button id="themeToggle" aria-label="Toggle theme">🌙</button>
+    </header>
 
-  <main>
     <!-- Search bar directly under header -->
     <div class="search-wrap">
       <input
@@ -34,7 +34,9 @@
         aria-label="Search"
       />
     </div>
+  </div>
 
+  <main>
     <!-- Recently searched -->
     <div id="recentSearches"></div>
 
