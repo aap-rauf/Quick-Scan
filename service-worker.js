@@ -2,7 +2,7 @@
 // EASY SCAN SERVICE WORKER
 // ============================================================
 
-const CACHE = "easy-scan-v1.2.0";
+const CACHE = "easy-scan-v1.2.1";
 
 const INVENTORY_BACKUP_CACHE = "easyScanInventoryBackup-v1";
 

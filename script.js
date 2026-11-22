@@ -1386,6 +1386,43 @@ function getSearchHistory() {
 
 
 // ============================================================
+// CLEAR SEARCH HISTORY
+// ============================================================
+
+function clearSearchHistory() {
+
+  try {
+
+    localStorage.removeItem(
+      SEARCH_HISTORY_KEY
+    );
+
+  }
+
+  catch (error) {
+
+    console.error(
+      "Could not clear search history:",
+      error
+    );
+
+    return;
+
+  }
+
+  const historyContainer =
+    document.querySelector(
+      ".search-history"
+    );
+
+  if (historyContainer) {
+    historyContainer.remove();
+  }
+
+}
+
+
+// ============================================================
 // SAVE SEARCH
 // ============================================================
 
@@ -1476,10 +1513,6 @@ function renderHistory() {
   const history =
     getSearchHistory();
 
-  if (history.length === 0) {
-    return;
-  }
-
   // Remove old history
   const oldHistory =
     document.querySelector(
@@ -1488,6 +1521,10 @@ function renderHistory() {
 
   if (oldHistory) {
     oldHistory.remove();
+  }
+
+  if (history.length === 0) {
+    return;
   }
 
   const historyContainer =
@@ -1500,8 +1537,18 @@ function renderHistory() {
 
   historyContainer.innerHTML = `
 
-    <div class="search-history-title">
-      Search History
+    <div class="search-history-header">
+      <div class="search-history-title">
+        Search History
+      </div>
+
+      <button
+        type="button"
+        class="clear-history-button"
+        aria-label="Clear all search history"
+      >
+        Clear history
+      </button>
     </div>
 
     <div class="search-history-list">
@@ -1550,6 +1597,31 @@ function renderHistory() {
   resultEl.appendChild(
     historyContainer
   );
+
+
+  const clearHistoryButton =
+    historyContainer.querySelector(
+      ".clear-history-button"
+    );
+
+  if (clearHistoryButton) {
+
+    clearHistoryButton.addEventListener(
+      "click",
+      () => {
+
+        if (
+          window.confirm(
+            "Clear all search history?"
+          )
+        ) {
+          clearSearchHistory();
+        }
+
+      }
+    );
+
+  }
 
 
   // ==========================================================
