@@ -49,10 +49,14 @@ body {
   line-height: 1.5;
 }
 
-header {
+.app-toolbar {
   position: sticky;
   top: 0;
   z-index: 20;
+  background: var(--page-bg);
+}
+
+header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -60,7 +64,6 @@ header {
   margin: 0 auto;
   padding-bottom: 14px;
   border-bottom: 1px solid var(--border);
-  background: var(--page-bg);
 }
 
 h1 {
@@ -117,16 +120,13 @@ button {
 main {
   width: 100%;
   max-width: 1200px;
-  margin: 22px auto 0;
+  margin: 0 auto;
 }
 
 .search-wrap {
-  position: sticky;
-  top: 68px;
-  z-index: 19;
+  box-sizing: border-box;
   width: 100%;
-  padding-bottom: 12px;
-  background: var(--page-bg);
+  padding: 18px 0 12px;
 }
 
 #searchBox {
@@ -514,10 +514,6 @@ main {
     font-size: 24px;
   }
 
-  main {
-    margin-top: 18px;
-  }
-
   #searchBox {
     min-height: 50px;
     padding: 12px 14px;
@@ -550,8 +546,8 @@ main {
     padding-bottom: 18px;
   }
 
-  main {
-    margin-top: 24px;
+  .search-wrap {
+    padding: 24px 0 16px;
   }
 
   #searchBox {
@@ -577,30 +573,21 @@ main {
   }
 
   header {
-    position: sticky;
-    top: 0;
-    z-index: 20;
     box-sizing: border-box;
     width: 100%;
     max-width: none;
     padding: clamp(24px, 2vw, 36px) clamp(20px, 2vw, 36px) 20px;
-    background: var(--page-bg);
   }
 
   main {
     box-sizing: border-box;
     width: 100%;
     max-width: none;
-    margin-top: 30px;
     padding: 0 clamp(20px, 2vw, 36px);
   }
 
   .search-wrap {
-    position: sticky;
-    top: 96px;
-    z-index: 19;
-    padding-bottom: 16px;
-    background: var(--page-bg);
+    padding: 30px clamp(20px, 2vw, 36px) 16px;
   }
 
   #result {
