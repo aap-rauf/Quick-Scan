@@ -233,7 +233,10 @@ document.addEventListener("DOMContentLoaded", () => {
     // FIRST RESULT
     // ========================================================
 
+    // An exact scan should win over an earlier suffix-only match.
     const item =
+      results.find(result => result.searchBarcodes.includes(q)) ||
+      results.find(result => result.searchSku === q) ||
       results[0];
 
 
@@ -244,15 +247,24 @@ document.addEventListener("DOMContentLoaded", () => {
     const barcodes = Array.isArray(item.barcodes)
       ? item.barcodes
           .filter(barcode => barcode !== null && barcode !== undefined && String(barcode).trim())
-          .map(String)
+          .map(barcode => String(barcode).trim())
       : [];
 
     if (barcodes.length === 0 && item.primaryBarcode) {
-      barcodes.push(String(item.primaryBarcode));
+      barcodes.push(String(item.primaryBarcode).trim());
     }
 
+    // Prefer the barcode that matched the search, falling back to the
+    // product's first barcode for SKU searches.
+    let selectedBarcode =
+      barcodes.find(barcode => barcode.toLowerCase() === q) ||
+      (String(item.sku || "").toLowerCase() === q
+        ? ""
+        : barcodes.find(barcode => barcode.toLowerCase().endsWith(q))) ||
+      barcodes[0] || "";
+
     const barcodeDisplay = `
-      <span class="barcode-values" id="barcode-values">${escapeHtml(barcodes[0] || "Unavailable")}</span>
+      <span class="barcode-values" id="barcode-values">${escapeHtml(selectedBarcode || "Unavailable")}</span>
       ${barcodes.length > 1
         ? `<button type="button" class="more" aria-controls="barcode-values" aria-expanded="false" aria-label="Show all ${barcodes.length} barcodes">+${barcodes.length - 1} more</button>`
         : ""}
@@ -280,14 +292,22 @@ document.addEventListener("DOMContentLoaded", () => {
           </p>
         </div>
 
-        ${item.primaryBarcode ? `
+        ${barcodes.length > 1 ? `
+          <label class="barcode-choice">
+            <span>Barcode to display</span>
+            <select id="barcodeSelect" aria-label="Barcode to display"></select>
+          </label>
+        ` : ""}
+
+        ${selectedBarcode ? `
           <div class="barcode-img">
             <svg
               id="barcodeSvg"
               role="img"
-              aria-label="Barcode for ${escapeHtml(item.primaryBarcode)}"
+              aria-label="Barcode for ${escapeHtml(selectedBarcode)}"
             ></svg>
           </div>
+          <p class="barcode-error" role="status" hidden>Barcode image unavailable. Use the number above.</p>
         ` : ""}
       </div>
 
@@ -308,15 +328,12 @@ document.addEventListener("DOMContentLoaded", () => {
       barcodeList?.querySelector(".more");
 
     if (more && barcodeValues) {
-      const firstBarcode =
-        barcodes[0] || "";
-
       more.addEventListener("click", () => {
         const expanded =
           more.getAttribute("aria-expanded") === "true";
 
         barcodeValues.textContent = expanded
-          ? firstBarcode
+          ? selectedBarcode
           : barcodes.join(", ");
 
         more.setAttribute(
@@ -347,32 +364,57 @@ document.addEventListener("DOMContentLoaded", () => {
     // GENERATE BARCODE
     // ========================================================
 
-    const barcodeSvg =
-      document.getElementById(
-        "barcodeSvg"
-      );
+    const barcodeSvg = resultEl.querySelector("#barcodeSvg");
+    const barcodeSelect = resultEl.querySelector("#barcodeSelect");
+    const barcodeError = resultEl.querySelector(".barcode-error");
 
+    function renderSelectedBarcode() {
+      if (barcodeValues && !barcodeList.classList.contains("expanded")) {
+        barcodeValues.textContent = selectedBarcode || "Unavailable";
+      }
 
-    if (
-      barcodeSvg &&
-      item.primaryBarcode &&
-      typeof JsBarcode !== "undefined"
-    ) {
+      if (!barcodeSvg) return;
 
-      JsBarcode(
-        barcodeSvg,
-        item.primaryBarcode,
-        {
+      barcodeSvg.setAttribute("aria-label", `Barcode for ${selectedBarcode}`);
+      try {
+        if (typeof JsBarcode === "undefined") {
+          throw new Error("Barcode library is unavailable");
+        }
+
+        JsBarcode(barcodeSvg, selectedBarcode, {
           format: "code128",
           lineColor: "#000",
           width: BARCODE_BAR_WIDTH,
           height: 150,
           displayValue: false,
           margin: 8
-        }
-      );
+        });
 
+        barcodeSvg.hidden = false;
+        barcodeSvg.removeAttribute("hidden");
+        if (barcodeError) barcodeError.hidden = true;
+      } catch (error) {
+        barcodeSvg.setAttribute("hidden", "");
+        if (barcodeError) barcodeError.hidden = false;
+        console.warn("Could not generate barcode:", error);
+      }
     }
+
+    if (barcodeSelect) {
+      barcodes.forEach(barcode => {
+        const option = document.createElement("option");
+        option.value = barcode;
+        option.textContent = barcode;
+        barcodeSelect.appendChild(option);
+      });
+      barcodeSelect.value = selectedBarcode;
+      barcodeSelect.addEventListener("change", () => {
+        selectedBarcode = barcodeSelect.value;
+        renderSelectedBarcode();
+      });
+    }
+
+    renderSelectedBarcode();
 
 
     // ========================================================
@@ -382,10 +424,11 @@ document.addEventListener("DOMContentLoaded", () => {
   searchHistoryTimer =
   setTimeout(() => {
 
+    searchHistoryTimer = null;
     saveSearchHistory(
       q,
       item.name,
-      item.primaryBarcode,
+      selectedBarcode,
       item.sku
     );
 
@@ -1390,6 +1433,9 @@ function getSearchHistory() {
 // ============================================================
 
 function clearSearchHistory() {
+
+  clearTimeout(searchHistoryTimer);
+  searchHistoryTimer = null;
 
   try {
 
