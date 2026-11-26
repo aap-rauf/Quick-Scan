@@ -110,6 +110,7 @@ button {
 
 #themeToggle:focus-visible,
 #searchBox:focus-visible,
+.barcode-choice select:focus-visible,
 .search-history-item:focus-visible,
 .clear-history-button:focus-visible,
 .more:focus-visible {
@@ -288,6 +289,35 @@ main {
   background: rgba(255, 215, 0, 0.4);
 }
 
+.barcode-choice {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+  color: #111111;
+  font-size: 14px;
+}
+
+.barcode-choice select {
+  box-sizing: border-box;
+  max-width: 100%;
+  min-height: 40px;
+  padding: 6px 10px;
+  border: 1px solid #a99a56;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #111111;
+  color-scheme: light;
+  font: inherit;
+}
+
+.barcode-error {
+  margin: 12px 0 0;
+  color: #6b3500;
+  font-size: 14px;
+}
+
 .barcode-img {
   display: flex;
   align-items: center;
@@ -297,6 +327,10 @@ main {
   border: 0;
   border-radius: 0;
   background: transparent;
+}
+
+.barcode-img svg[hidden] {
+  display: none;
 }
 
 .barcode-img img,
