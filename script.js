@@ -266,7 +266,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const barcodeDisplay = `
       <span class="barcode-values" id="barcode-values">${escapeHtml(selectedBarcode || "Unavailable")}</span>
       ${barcodes.length > 1
-        ? `<button type="button" class="more" aria-controls="barcode-values" aria-expanded="false" aria-label="Show all ${barcodes.length} barcodes">+${barcodes.length - 1} more</button>`
+        ? `<button type="button" class="more" aria-controls="barcode-options" aria-expanded="false" aria-label="Change barcode">Change</button>`
         : ""}
     `;
 
@@ -290,14 +290,11 @@ document.addEventListener("DOMContentLoaded", () => {
             <span class="product-label">Barcodes:</span>
             <span class="barcode-list">${barcodeDisplay}</span>
           </p>
-        </div>
 
-        ${barcodes.length > 1 ? `
-          <label class="barcode-choice">
-            <span>Barcode to display</span>
-            <select id="barcodeSelect" aria-label="Barcode to display"></select>
-          </label>
-        ` : ""}
+          ${barcodes.length > 1 ? `
+            <div class="barcode-options" id="barcode-options" role="group" aria-label="Choose a barcode" hidden></div>
+          ` : ""}
+        </div>
 
         ${selectedBarcode ? `
           <div class="barcode-img">
@@ -315,7 +312,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
     // ========================================================
-    // EXPAND / COLLAPSE ALL BARCODES
+    // CHOOSE A DIFFERENT BARCODE
     // ========================================================
 
     const barcodeList =
@@ -327,37 +324,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const more =
       barcodeList?.querySelector(".more");
 
-    if (more && barcodeValues) {
-      more.addEventListener("click", () => {
-        const expanded =
-          more.getAttribute("aria-expanded") === "true";
-
-        barcodeValues.textContent = expanded
-          ? selectedBarcode
-          : barcodes.join(", ");
-
-        more.setAttribute(
-          "aria-expanded",
-          String(!expanded)
-        );
-
-        more.setAttribute(
-          "aria-label",
-          expanded
-            ? `Show all ${barcodes.length} barcodes`
-            : "Show fewer barcodes"
-        );
-
-        more.textContent = expanded
-          ? `+${barcodes.length - 1} more`
-          : "Show less";
-
-        barcodeList.classList.toggle(
-          "expanded",
-          !expanded
-        );
-      });
-    }
+    const barcodeOptions =
+      resultEl.querySelector("#barcode-options");
 
 
     // ========================================================
@@ -365,11 +333,10 @@ document.addEventListener("DOMContentLoaded", () => {
     // ========================================================
 
     const barcodeSvg = resultEl.querySelector("#barcodeSvg");
-    const barcodeSelect = resultEl.querySelector("#barcodeSelect");
     const barcodeError = resultEl.querySelector(".barcode-error");
 
     function renderSelectedBarcode() {
-      if (barcodeValues && !barcodeList.classList.contains("expanded")) {
+      if (barcodeValues) {
         barcodeValues.textContent = selectedBarcode || "Unavailable";
       }
 
@@ -400,17 +367,37 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
-    if (barcodeSelect) {
+    if (more && barcodeOptions) {
+      const optionButtons = [];
+
       barcodes.forEach(barcode => {
-        const option = document.createElement("option");
-        option.value = barcode;
+        const option = document.createElement("button");
+        option.type = "button";
+        option.className = "barcode-option";
         option.textContent = barcode;
-        barcodeSelect.appendChild(option);
+        option.setAttribute("aria-pressed", String(barcode === selectedBarcode));
+        option.addEventListener("click", () => {
+          selectedBarcode = barcode;
+          optionButtons.forEach(button => {
+            button.setAttribute("aria-pressed", String(button.textContent === selectedBarcode));
+          });
+          renderSelectedBarcode();
+          barcodeOptions.hidden = true;
+          more.setAttribute("aria-expanded", "false");
+          more.setAttribute("aria-label", "Change barcode");
+          more.textContent = "Change";
+          more.focus();
+        });
+        optionButtons.push(option);
+        barcodeOptions.appendChild(option);
       });
-      barcodeSelect.value = selectedBarcode;
-      barcodeSelect.addEventListener("change", () => {
-        selectedBarcode = barcodeSelect.value;
-        renderSelectedBarcode();
+
+      more.addEventListener("click", () => {
+        const expanded = more.getAttribute("aria-expanded") === "true";
+        barcodeOptions.hidden = expanded;
+        more.setAttribute("aria-expanded", String(!expanded));
+        more.setAttribute("aria-label", expanded ? "Change barcode" : "Close barcode choices");
+        more.textContent = expanded ? "Change" : "Close";
       });
     }
 
