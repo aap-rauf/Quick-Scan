@@ -266,7 +266,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const barcodeDisplay = `
       <span class="barcode-values" id="barcode-values">${escapeHtml(selectedBarcode || "Unavailable")}</span>
       ${barcodes.length > 1
-        ? `<button type="button" class="more" aria-controls="barcode-options" aria-expanded="false" aria-label="Change barcode">Change</button>`
+        ? `<button type="button" class="more" aria-controls="barcode-options" aria-expanded="false" aria-label="Show more barcodes">More</button>`
         : ""}
     `;
 
@@ -384,8 +384,8 @@ document.addEventListener("DOMContentLoaded", () => {
           renderSelectedBarcode();
           barcodeOptions.hidden = true;
           more.setAttribute("aria-expanded", "false");
-          more.setAttribute("aria-label", "Change barcode");
-          more.textContent = "Change";
+          more.setAttribute("aria-label", "Show more barcodes");
+          more.textContent = "More";
           more.focus();
         });
         optionButtons.push(option);
@@ -396,8 +396,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const expanded = more.getAttribute("aria-expanded") === "true";
         barcodeOptions.hidden = expanded;
         more.setAttribute("aria-expanded", String(!expanded));
-        more.setAttribute("aria-label", expanded ? "Change barcode" : "Close barcode choices");
-        more.textContent = expanded ? "Change" : "Close";
+        more.setAttribute("aria-label", expanded ? "Show more barcodes" : "Close barcode choices");
+        more.textContent = expanded ? "More" : "Close";
       });
     }
 
